@@ -145,7 +145,7 @@ impl GenericByteWriteInterface<UARTError> for UARTDriver {
 
 impl GenericByteInterface<UARTError> for UARTDriver {}
 
-impl core::fmt::Write for UARTDriver {
+impl core::fmt::Write for &UARTDriver {
     fn write_str(&mut self, s: &str) -> Result<(), core::fmt::Error> {
         self.send_bytes(s.as_bytes()).map_err(|_| core::fmt::Error{})
     }

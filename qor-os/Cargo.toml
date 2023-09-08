@@ -4,7 +4,17 @@ version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+color = []
+show_trace = ["show_info"]
+show_info = ["show_debug"]
+show_debug = ["show_warn"]
+show_warn = ["show_error"]
+show_error = []
+
+default = ["color", "show_trace"]
 
 [dependencies]
+const_format = "0.2.31"
 qor-core = {path="../qor-core"}
 qor-riscv = {path="../qor-riscv"}

@@ -11,9 +11,13 @@
 )]
 
 mod asm;
+mod drivers;
+mod kprint;
 mod panic;
+
 #[no_mangle]
 #[repr(align(4))]
 pub extern "C" fn kinit() {
-
+    drivers::initialize_uart_driver().expect("Unable to initialize UART device driver");
+    info!("UART Driver Initialized");
 }

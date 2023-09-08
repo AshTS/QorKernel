@@ -1,4 +1,5 @@
 /// Interface to access memory mapped IO
+#[derive(Clone, Copy)]
 pub struct MMIOInterface {
     base_address: usize
 }
