@@ -9,3 +9,5 @@ edition = "2021"
 std=[]
 
 [dependencies]
+paste = "1.0.14"
+qor-core={path="../qor-core"}
