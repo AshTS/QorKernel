@@ -3,6 +3,12 @@
 version = 3
 
 [[package]]
+name = "atomic_ref"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a6fa0b588ba996abc358504c724df6ccbed358b3c23d24b887576da04c8fc5e0"
+
+[[package]]
 name = "const_format"
 version = "0.2.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -40,6 +46,10 @@ dependencies = [
 [[package]]
 name = "qor-core"
 version = "0.1.0"
+dependencies = [
+ "atomic_ref",
+ "const_format",
+]
 
 [[package]]
 name = "qor-os"

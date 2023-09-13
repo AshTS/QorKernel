@@ -12,3 +12,6 @@ extern crate std;
 
 pub mod drivers;
 pub mod interfaces;
+
+#[macro_use]
+pub mod logging;

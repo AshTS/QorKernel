@@ -9,4 +9,8 @@
 #[cfg(feature = "std")]
 extern crate std;
 
+#[allow(unused_imports)]
+#[macro_use]
+extern crate qor_core;
+
 pub mod drivers;

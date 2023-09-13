@@ -5,11 +5,10 @@ use qor_riscv::drivers::uart::UARTDriver;
 pub static UART_DRIVER: UARTDriver = unsafe { UARTDriver::new(0x1000_0000) };
 
 /// Initialize the UART Driver
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns an error if the driver was unable to be initialized
 pub fn initialize_uart_driver() -> Result<(), <UARTDriver as UARTDriverInterface>::UARTError> {
-
     UART_DRIVER.initialize()
 }
