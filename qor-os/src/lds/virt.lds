@@ -55,6 +55,7 @@ SECTIONS {
 
     . = _stack_start;
     . = . + 0x80000;
+    . = ALIGN(4096);
 
     PROVIDE(_stack_end = .);
     PROVIDE(_memory_end = ORIGIN(ram) + LENGTH(ram));

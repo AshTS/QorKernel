@@ -7,6 +7,7 @@ edition = "2021"
 
 [features]
 std=[]
+# default=["std"]
 
 [dependencies]
 atomic_ref = "0.2.1"

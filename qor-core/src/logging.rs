@@ -22,7 +22,13 @@ impl core::fmt::Write for LoggerWrapper {
     }
 }
 
+#[cfg(not(feature = "std"))]
 const fn default_value(_: &str) {}
+
+#[cfg(feature = "std")]
+fn default_value(s: &str) {
+    std::print!("{s}");
+}
 
 static LOGGER_OBJECT: atomic_ref::AtomicRef<'static, fn(&str)> =
     atomic_ref::AtomicRef::new(Some(&(default_value as fn(&str))));
@@ -73,14 +79,14 @@ pub const ERROR: &str = const_format::formatcp!("[{}ERROR{}] ", RED, CLEAR);
 macro_rules! trace {
     ($fmt: literal, $($args:tt)+) => {{
         use core::fmt::Write;
-        if qor_core::logging::check_log_level(qor_core::logging::LogLevel::Trace) {
-            let _ = write!(qor_core::logging::get_writer(), concat!("{}", $fmt, "\n"), $crate::logging::TRACE, $($args)+);
+        if $crate::logging::check_log_level($crate::logging::LogLevel::Trace) {
+            let _ = write!($crate::logging::get_writer(), concat!("{}", $fmt, "\n"), $crate::logging::TRACE, $($args)+);
         }
     }};
 
     ($fmt: literal) => {{
         use core::fmt::Write;
-        if qor_core::logging::check_log_level(qor_core::logging::LogLevel::Trace) {
+        if $crate::logging::check_log_level($crate::logging::LogLevel::Trace) {
             let _ = write!($crate::logging::get_writer(), "{}{}\n", $crate::logging::TRACE, $fmt);
         }
     }};
@@ -91,14 +97,14 @@ macro_rules! trace {
 macro_rules! debug {
     ($fmt: literal, $($args:tt)+) => {{
         use core::fmt::Write;
-        if qor_core::logging::check_log_level(qor_core::logging::LogLevel::Debug) {
-            let _ = write!(qor_core::logging::get_writer(), concat!("{}", $fmt, "\n"), $crate::logging::DEBUG, $($args)+);
+        if $crate::logging::check_log_level($crate::logging::LogLevel::Debug) {
+            let _ = write!($crate::logging::get_writer(), concat!("{}", $fmt, "\n"), $crate::logging::DEBUG, $($args)+);
         }
     }};
 
     ($fmt: literal) => {{
         use core::fmt::Write;
-        if qor_core::logging::check_log_level(qor_core::logging::LogLevel::Debug) {
+        if $crate::logging::check_log_level($crate::logging::LogLevel::Debug) {
             let _ = write!($crate::logging::get_writer(), "{}{}\n", $crate::logging::DEBUG, $fmt);
         }
     }};
@@ -109,14 +115,14 @@ macro_rules! debug {
 macro_rules! info {
     ($fmt: literal, $($args:tt)+) => {{
         use core::fmt::Write;
-        if qor_core::logging::check_log_level(qor_core::logging::LogLevel::Info) {
-            let _ = write!(qor_core::logging::get_writer(), concat!("{}", $fmt, "\n"), $crate::logging::INFO, $($args)+);
+        if $crate::logging::check_log_level($crate::logging::LogLevel::Info) {
+            let _ = write!($crate::logging::get_writer(), concat!("{}", $fmt, "\n"), $crate::logging::INFO, $($args)+);
         }
     }};
 
     ($fmt: literal) => {{
         use core::fmt::Write;
-        if qor_core::logging::check_log_level(qor_core::logging::LogLevel::Info) {
+        if $crate::logging::check_log_level($crate::logging::LogLevel::Info) {
             let _ = write!($crate::logging::get_writer(), "{}{}\n", $crate::logging::INFO, $fmt);
         }
     }};
@@ -127,14 +133,14 @@ macro_rules! info {
 macro_rules! warn {
     ($fmt: literal, $($args:tt)+) => {{
         use core::fmt::Write;
-        if qor_core::logging::check_log_level(qor_core::logging::LogLevel::Warn) {
-            let _ = write!(qor_core::logging::get_writer(), concat!("{}", $fmt, "\n"), $crate::logging::WARN, $($args)+);
+        if $crate::logging::check_log_level($crate::logging::LogLevel::Warn) {
+            let _ = write!($crate::logging::get_writer(), concat!("{}", $fmt, "\n"), $crate::logging::WARN, $($args)+);
         }
     }};
 
     ($fmt: literal) => {{
         use core::fmt::Write;
-        if qor_core::logging::check_log_level(qor_core::logging::LogLevel::Warn) {
+        if $crate::logging::check_log_level($crate::logging::LogLevel::Warn) {
             let _ = write!($crate::logging::get_writer(), "{}{}\n", $crate::logging::WARN, $fmt);
         }
     }};
@@ -145,14 +151,14 @@ macro_rules! warn {
 macro_rules! error {
     ($fmt: literal, $($args:tt)+) => {{
         use core::fmt::Write;
-        if qor_core::logging::check_log_level(qor_core::logging::LogLevel::Error) {
-            let _ = write!(qor_core::logging::get_writer(), concat!("{}", $fmt, "\n"), $crate::logging::ERROR, $($args)+);
+        if $crate::logging::check_log_level($crate::logging::LogLevel::Error) {
+            let _ = write!($crate::logging::get_writer(), concat!("{}", $fmt, "\n"), $crate::logging::ERROR, $($args)+);
         }
     }};
 
     ($fmt: literal) => {{
         use core::fmt::Write;
-        if qor_core::logging::check_log_level(qor_core::logging::LogLevel::Error) {
+        if $crate::logging::check_log_level($crate::logging::LogLevel::Error) {
             let _ = write!($crate::logging::get_writer(), "{}{}\n", $crate::logging::ERROR, $fmt);
         }
     }};
