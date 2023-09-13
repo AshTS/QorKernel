@@ -12,6 +12,8 @@ mod drivers;
 mod kprint;
 mod panic;
 
+/// Entry point for the boot sequence, no interrupts are enabled when this function is called, and we are in machine
+/// mode, no paging is enabled.
 #[no_mangle]
 #[repr(align(4))]
 pub extern "C" fn kinit() {

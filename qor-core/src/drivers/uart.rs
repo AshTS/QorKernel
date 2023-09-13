@@ -1,7 +1,7 @@
 use crate::interfaces::bytes::GenericByteInterface;
 
 /// # UART Driver Interface
-/// 
+///
 /// Exposes the common functionality for all UART Drivers
 pub trait UARTDriverInterface: GenericByteInterface<Self::UARTError> {
     type UARTError;
@@ -10,9 +10,9 @@ pub trait UARTDriverInterface: GenericByteInterface<Self::UARTError> {
     fn is_initialized(&self) -> bool;
 
     /// Initialize the UART Driver
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// Returns an error if initialization failed.
     fn initialize(&self) -> Result<(), Self::UARTError>;
 }

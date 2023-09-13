@@ -60,7 +60,7 @@ macro_rules! read_write_impl {
     ($name: literal, $extra_docs: literal, $extra_safety: literal) => {
         read_impl!($name, $extra_docs, $extra_safety);
         write_impl!($name, $extra_docs, $extra_safety);
-    }
+    };
 }
 
 read_impl!("interrupt_identity");
@@ -72,12 +72,32 @@ read_write_impl!("line_status");
 read_write_impl!("modem_status");
 read_write_impl!("scratch");
 
-read_impl!("receiver_buffer", "", "Additionally, the DLAB (the 7th bit of the Line Control Register) bit must be clear.");
-write_impl!("transmitter_holding", "", "Additionally, the DLAB (the 7th bit of the Line Control Register) bit must be clear.");
-write_impl!("interrupt_enable", "", "Additionally, the DLAB (the 7th bit of the Line Control Register) bit must be clear.");
+read_impl!(
+    "receiver_buffer",
+    "",
+    "Additionally, the DLAB (the 7th bit of the Line Control Register) bit must be clear."
+);
+write_impl!(
+    "transmitter_holding",
+    "",
+    "Additionally, the DLAB (the 7th bit of the Line Control Register) bit must be clear."
+);
+write_impl!(
+    "interrupt_enable",
+    "",
+    "Additionally, the DLAB (the 7th bit of the Line Control Register) bit must be clear."
+);
 
-read_write_impl!("divisor_latch_ls", "", "Additionally, the DLAB (the 7th bit of the Line Control Register) bit must be set.");
-read_write_impl!("divisor_latch_ms", "", "Additionally, the DLAB (the 7th bit of the Line Control Register) bit must be set.");
+read_write_impl!(
+    "divisor_latch_ls",
+    "",
+    "Additionally, the DLAB (the 7th bit of the Line Control Register) bit must be set."
+);
+read_write_impl!(
+    "divisor_latch_ms",
+    "",
+    "Additionally, the DLAB (the 7th bit of the Line Control Register) bit must be set."
+);
 
 pub const fn divisor_from_baud(baud: u32) -> u16 {
     let baud16 = baud * 16;
