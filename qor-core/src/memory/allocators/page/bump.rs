@@ -1,4 +1,7 @@
-use core::ops::Range;
+use core::{
+    mem::{align_of, size_of},
+    ops::Range,
+};
 
 /// Bump allocator for permanently allocating memory in chunks of pages.
 ///
@@ -33,7 +36,7 @@ pub enum AllocationError {
     Uninitialized,
 }
 
-impl<Page> PageBumpAllocator<Page> {
+impl<Page: 'static> PageBumpAllocator<Page> {
     /// Construct an empty `PageBumpAllocator` this allocator will always return a `AllocationError`
     #[must_use]
     pub const fn new() -> Self {
@@ -184,15 +187,58 @@ impl<Page> PageBumpAllocator<Page> {
             }
         }
     }
+
+    /// Allocate space for a particular value from the allocator, returning a static mutable reference to it.
+    ///
+    /// # Errors
+    ///
+    /// If the allocator has not been initialized an `AllocationError::Uninitialized` error is returned. If the
+    /// allocator has been initialized, but does not have enough memory to complete the allocation, an
+    /// `AllocationError::OutOfMemory` error is returned.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if `Page` is a Zero Sized type. Additionally, this function will panic if `T` has a
+    /// greater alignment requirement than `Page`.
+    pub fn allocate_object<T: Sized>(&self, object: T) -> Result<&'static mut T, AllocationError> {
+        // Compute the number of pages required
+        let page_size = size_of::<Page>();
+        assert!(page_size > 0);
+        let object_size = size_of::<T>();
+        let pages_required = (object_size + page_size - 1) / page_size;
+
+        // Allocate the necessary memory
+        let allocated = self.allocate(pages_required)?;
+        let allocated_ptr = allocated.as_mut_ptr().cast::<T>();
+
+        // Verify alignment of `T` is not greater than that of `Page`.
+        assert!(align_of::<T>() <= align_of::<Page>());
+
+        // Safety:
+        // - The above assertion ensures that the pointer is properly aligned.
+        // - `allocated_ptr` came from `slice::as_mut_ptr()` and thus must be
+        //   valid for writes.
+        unsafe { allocated_ptr.write(object) };
+
+        // Safety:
+        // - The above assertion ensures that the pointer is properly aligned.
+        // - The memory came from the single allocation performed to construct
+        //   `allocated`.
+        // - `allocated_ptr` points to the valid construction of `T` which was
+        //   written from `object`.
+        // - The resulting lifetime is static because this is the bump
+        //   allocator, and we got the static `Page` range allocation.
+        Ok(unsafe { allocated_ptr.as_mut() }.unwrap())
+    }
 }
 
-impl<Page> core::default::Default for PageBumpAllocator<Page> {
+impl<Page: 'static> core::default::Default for PageBumpAllocator<Page> {
     fn default() -> Self {
         Self::new()
     }
 }
-
 #[cfg(feature = "std")]
+#[cfg(test)]
 mod test {
     #[test]
     pub fn test_allocator() {
@@ -202,6 +248,5 @@ mod test {
             allocator.assign_region(mem.as_mut_ptr_range());
         }
         allocator.allocate(54).unwrap();
-        panic!()
     }
 }

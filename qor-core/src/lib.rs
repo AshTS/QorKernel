@@ -6,6 +6,7 @@
 #![warn(clippy::all, clippy::pedantic, clippy::nursery)]
 
 #[cfg(feature = "std")]
+#[macro_use]
 extern crate std;
 
 pub mod drivers;
@@ -15,3 +16,4 @@ pub mod interfaces;
 pub mod logging;
 
 pub mod memory;
+pub mod utils;
