@@ -20,6 +20,50 @@ pub enum AllocationError {
     Uninitialized,
 }
 
+/// Bitmap allocated smart pointer
+pub struct PageBox<'a, Page: 'static, T> {
+    // Safety Requirements:
+    // - The allocator pointed to by `allocator` has made an allocation at `ptr` with a length of `page_count` pages.
+    // - `ptr` is valid, properly aligned, and uniquely owned, and thus dereferenceable.
+    // - This allocation lives exactly as long as this `PageBox`, as the allocation can only safely be freed when it is
+    //   dropped.
+    allocator: &'a PageBitmapAllocator<Page>,
+    ptr: core::ptr::NonNull<T>,
+    page_count: usize
+}
+
+impl<'a, Page: 'static, T> core::ops::Deref for PageBox<'a, Page, T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        // Safety:
+        // - `ptr` is properly aligned and dereferenceable.
+        // - `ptr` points to a valid instance of `T`
+        // - The allocation must live as long as the `PageBox`, and since the lifetime of the resulting reference is
+        //   that of the borrow of `self`, it must be valid for that lifetime.
+        unsafe { self.ptr.as_ref() }
+    }
+}
+
+impl<'a, Page: 'static, T> core::ops::DerefMut for PageBox<'a, Page, T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        // Safety:
+        // - `ptr` is properly aligned and dereferenceable.
+        // - `ptr` points to a valid instance of `T`
+        // - The allocation must live as long as the `PageBox`, and since the lifetime of the resulting reference is
+        //   that of the borrow of `self`, it must be valid for that lifetime.
+        unsafe { self.ptr.as_mut() }
+    }
+}
+
+impl<'a, Page: 'static, T> core::ops::Drop for PageBox<'a, Page, T> {
+    fn drop(&mut self) {
+        // Safety:
+        // - `ptr` is guaranteed to be valid and properly aligned, and refer to an allocation of `self.page_count` pages.
+        unsafe { self.allocator.free(self.ptr.as_ptr().cast::<Page>(), self.page_count).unwrap() };
+    }
+}
+
 impl<Page> PageBitmapAllocator<Page> {
     /// Creates a new [`PageBitmapAllocator<Page>`] with an empty allocation space.
     #[must_use]
@@ -175,6 +219,43 @@ impl<Page> PageBitmapAllocator<Page> {
 
         Ok(())
     }
+
+    /// Allocate a region of memory from the [`PageBitmapAllocator<Page>`] and return a `PageBox<Page, T>` to that
+    /// allocation.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the allocator is not initialized, or there is not enough memory to
+    /// complete the requested allocation.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if `T` is zero sized.
+    pub fn alloc_boxed<T: Sized>(&self, object: T) -> Result<PageBox<'_, Page, T>, AllocationError> {
+        // Compute the number of pages required
+        let page_size = size_of::<Page>();
+        assert!(page_size > 0);
+        let object_size = size_of::<T>();
+        let pages_required = (object_size + page_size - 1) / page_size;
+
+        // Allocate the necessary memory
+        let allocated_ptr = self.allocate(pages_required)?.cast::<T>();
+
+        // Verify alignment of `T` is not greater than that of `Page`.
+        assert!(align_of::<T>() <= align_of::<Page>());
+
+        // Safety:
+        // - The above assertion ensures that the pointer is properly aligned.
+        // - `allocated_ptr` came from `Self::allocate` and thus is valid for writes.
+        unsafe { allocated_ptr.write(object) };
+
+        Ok(PageBox{
+            allocator: self,
+            ptr: core::ptr::NonNull::new(allocated_ptr).unwrap(),
+            page_count: pages_required,
+
+        })
+    }
 }
 
 impl<Page> Default for PageBitmapAllocator<Page> {
@@ -231,5 +312,26 @@ mod test {
         for t in threads {
             t.join().unwrap();
         }
+    }
+
+    #[test]
+    pub fn alloc_box_test() {
+        let alloc_space = Box::leak(Box::new([Page([0; 128]); 4096]));
+        let allocator = Box::leak(Box::new(PageBitmapAllocator::from_pages(alloc_space)))
+            as &PageBitmapAllocator<_>;
+        
+        let data_a = [0u64; 128];
+        let data_b = [42u32; 8];
+
+        let mut box_a = allocator.alloc_boxed(data_a).unwrap();
+        let mut box_b = allocator.alloc_boxed(data_b).unwrap();
+
+        box_a[0] = 42;
+        box_b[0] = 0;
+
+        assert_eq!(box_a[0], 42);
+        assert_eq!(box_b[0], 0);
+
+        core::mem::drop(box_a);
     }
 }
