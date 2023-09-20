@@ -1,12 +1,16 @@
+const KIB: usize = 1024;
+const MIB: usize = 1024 * 1024;
+const GIB: usize = 1024 * 1024 * 1024;
+
 /// Memory Unit Generic Type, stores the size of a memory region as a number of a particular size of units
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct MemoryUnit<const SCALE: usize>(usize);
 
 /// Memory Unit for Mebibytes
-pub type MiByteCount = MemoryUnit<{ 1024 * 1024 }>;
+pub type MiByteCount = MemoryUnit<MIB>;
 
 /// Memory Unit for Kibibytes
-pub type KiByteCount = MemoryUnit<1024>;
+pub type KiByteCount = MemoryUnit<KIB>;
 
 /// Memory Unit for Bytes
 pub type ByteCount = MemoryUnit<1>;
@@ -43,20 +47,18 @@ impl<const SRC: usize> MemoryUnit<SRC> {
     }
 }
 
-impl core::fmt::Display for MemoryUnit<1> {
+impl<const SIZE: usize> core::fmt::Display for MemoryUnit<SIZE> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{} B", self.0)
-    }
-}
+        let raw_bytes = self.raw_bytes();
 
-impl core::fmt::Display for MemoryUnit<1024> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{} KiB", self.0)
-    }
-}
-
-impl core::fmt::Display for MemoryUnit<{ 1024 * 1024 }> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{} MiB", self.0)
+        if raw_bytes >= GIB && raw_bytes % GIB == 0 {
+            write!(f, "{} GiB", raw_bytes / GIB)
+        } else if raw_bytes >= MIB && raw_bytes % MIB == 0 {
+            write!(f, "{} MiB", raw_bytes / MIB)
+        } else if raw_bytes >= KIB && raw_bytes % KIB == 0 {
+            write!(f, "{} KiB", raw_bytes / KIB)
+        } else {
+            write!(f, "{raw_bytes} B")
+        }
     }
 }

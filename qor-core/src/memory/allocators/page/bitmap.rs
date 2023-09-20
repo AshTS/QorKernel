@@ -29,7 +29,7 @@ pub struct PageBox<'a, Page: 'static, T> {
     //   dropped.
     allocator: &'a PageBitmapAllocator<Page>,
     ptr: core::ptr::NonNull<T>,
-    page_count: usize
+    page_count: usize,
 }
 
 impl<'a, Page: 'static, T> core::ops::Deref for PageBox<'a, Page, T> {
@@ -60,7 +60,11 @@ impl<'a, Page: 'static, T> core::ops::Drop for PageBox<'a, Page, T> {
     fn drop(&mut self) {
         // Safety:
         // - `ptr` is guaranteed to be valid and properly aligned, and refer to an allocation of `self.page_count` pages.
-        unsafe { self.allocator.free(self.ptr.as_ptr().cast::<Page>(), self.page_count).unwrap() };
+        unsafe {
+            self.allocator
+                .free(self.ptr.as_ptr().cast::<Page>(), self.page_count)
+                .unwrap();
+        }
     }
 }
 
@@ -231,7 +235,10 @@ impl<Page> PageBitmapAllocator<Page> {
     /// # Panics
     ///
     /// This function will panic if `T` is zero sized.
-    pub fn alloc_boxed<T: Sized>(&self, object: T) -> Result<PageBox<'_, Page, T>, AllocationError> {
+    pub fn alloc_boxed<T: Sized>(
+        &self,
+        object: T,
+    ) -> Result<PageBox<'_, Page, T>, AllocationError> {
         // Compute the number of pages required
         let page_size = size_of::<Page>();
         assert!(page_size > 0);
@@ -249,11 +256,10 @@ impl<Page> PageBitmapAllocator<Page> {
         // - `allocated_ptr` came from `Self::allocate` and thus is valid for writes.
         unsafe { allocated_ptr.write(object) };
 
-        Ok(PageBox{
+        Ok(PageBox {
             allocator: self,
             ptr: core::ptr::NonNull::new(allocated_ptr).unwrap(),
             page_count: pages_required,
-
         })
     }
 }
@@ -319,7 +325,7 @@ mod test {
         let alloc_space = Box::leak(Box::new([Page([0; 128]); 4096]));
         let allocator = Box::leak(Box::new(PageBitmapAllocator::from_pages(alloc_space)))
             as &PageBitmapAllocator<_>;
-        
+
         let data_a = [0u64; 128];
         let data_b = [42u32; 8];
 

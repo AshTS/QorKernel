@@ -31,4 +31,9 @@ pub extern "C" fn kinit() {
 
     // Initialize the global page grained bump allocator
     memory::initialize_page_bump_allocator().expect("Unable to initialize bump allocator");
+
+    // Initialize the global page grained bitmap allocator
+    let dynamic_page_allocation_size = qor_core::memory::KiByteCount::new(1024);
+    memory::initialize_page_bitmap_allocator(dynamic_page_allocation_size.convert())
+        .expect("Unable to initialize bitmap allocator");
 }

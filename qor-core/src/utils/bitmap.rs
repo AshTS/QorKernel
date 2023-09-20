@@ -106,7 +106,8 @@ impl BitmapLock {
     }
 
     fn clear_in_entry(&self, entry_index: usize, mask: u64) {
-        let result = self.bitmap[entry_index].fetch_and(!mask, core::sync::atomic::Ordering::AcqRel);
+        let result =
+            self.bitmap[entry_index].fetch_and(!mask, core::sync::atomic::Ordering::AcqRel);
 
         if result & mask != mask {
             warn!("Attempted to clear bits with mask {:x} at entry {} in bitmap lock, some bits were already cleared");

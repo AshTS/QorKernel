@@ -55,6 +55,7 @@ dependencies = [
 name = "qor-os"
 version = "0.1.0"
 dependencies = [
+ "atomic_ref",
  "const_format",
  "qor-core",
  "qor-riscv",

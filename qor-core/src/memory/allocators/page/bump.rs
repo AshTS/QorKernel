@@ -65,11 +65,6 @@ impl<Page: 'static> PageBumpAllocator<Page> {
     ///
     /// This function will panic if `Page` is a Zero Sized type.
     pub unsafe fn assign_region(&self, region: Range<*mut Page>) {
-        info!("Address of `self` is: {:x?}", core::ptr::addr_of!(*self));
-        info!(
-            "Address of `self.walking_pointer` is: {:x?}",
-            core::ptr::addr_of!(self.walking_pointer)
-        );
         // We start by updating the `walking_pointer`. Because the ordering on the subsequent store to `end_pointer` is
         // `Release`, this store will be executed before the `end_pointer` is loaded using `Acquire` ordering.
         self.walking_pointer
@@ -113,28 +108,17 @@ impl<Page: 'static> PageBumpAllocator<Page> {
     ///
     /// This function will panic if `Page` is a Zero Sized type.
     pub fn allocate(&self, page_count: usize) -> Result<&'static mut [Page], AllocationError> {
-        debug!("Attempting allocation");
         // This read using `Acquire` ordering means any modifications made in the `assign_region` function have already taken place.
         let end_pointer = self.end_pointer.load(core::sync::atomic::Ordering::Acquire);
-
-        debug!("End pointer: {:x?}", end_pointer);
 
         if end_pointer.is_null() {
             Err(AllocationError::Uninitialized)
         } else {
-            debug!("Just Before fetch_ptr_add");
-            info!(
-                "Address of `self.walking_pointer` is: {:x?}",
-                core::ptr::addr_of!(self.walking_pointer)
-            );
             // Once control makes it here, `end_pointer` must not be null
             let walking_pointer = self
                 .walking_pointer
                 .fetch_ptr_add(page_count, core::sync::atomic::Ordering::Relaxed);
 
-            debug!("Just After fetch_ptr_add");
-
-            debug!("Walking pointer: {:x?}", walking_pointer);
             // If `walking_pointer` is greater than or equal to `end_pointer`, there is a memory exhaustion error.
             if walking_pointer >= end_pointer {
                 Err(AllocationError::OutOfMemory {
@@ -159,16 +143,7 @@ impl<Page: 'static> PageBumpAllocator<Page> {
                 // - A similar argument prevents wrapping.
                 let free_pages = unsafe { end_pointer.sub_ptr(walking_pointer) };
 
-                debug!("Free pages: {}", free_pages);
-
                 if free_pages >= page_count {
-                    trace!(
-                        "Successfully allocated {} page{} at {:x?}",
-                        page_count,
-                        if page_count == 1 { "" } else { "s" },
-                        walking_pointer
-                    );
-
                     // Safety:
                     // - At least `page_count` pages remain between `walking_pointer` and `end_pointer`, and all pages between the two are known to be valid for being allocated.
                     // - All pages in that range are known to be valid representations of `Page`.

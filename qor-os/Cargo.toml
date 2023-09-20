@@ -10,6 +10,7 @@ edition = "2021"
 debug = true
 
 [dependencies]
+atomic_ref = "0.2.1"
 const_format = "0.2.31"
 qor-core = {path="../qor-core"}
 qor-riscv = {path="../qor-riscv"}
