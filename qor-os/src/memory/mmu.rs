@@ -143,6 +143,11 @@ impl ManagedPageTable {
             });
         };
     }
+
+    /// Set this page table as the currently used page table
+    pub fn set_as_page_table(&'static mut self) {
+        qor_riscv::memory::mmu::set_page_table(&mut self.0);
+    }
 }
 
 /// Identity map the kernel to a `ManagedPageTable` stored on the heap
@@ -187,6 +192,14 @@ pub fn identity_map_kernel(table: &mut ManagedPageTable) {
     table.id_map_range(
         unsafe { crate::asm::KERNEL_STACK_START }.into(),
         unsafe { crate::asm::KERNEL_STACK_END }.into(),
+        GlobalUserFlags::None,
+        EntryPermissionFlags::ReadWrite,
+    );
+
+    // UART PORT
+    table.id_map_range(
+        PhysicalAddress(0x1000_0000),
+        PhysicalAddress(0x1000_1000),
         GlobalUserFlags::None,
         EntryPermissionFlags::ReadWrite,
     );

@@ -42,4 +42,17 @@ pub extern "C" fn kinit() {
         .allocate_object(memory::mmu::ManagedPageTable::empty())
         .expect("Unable to allocate space for root kernel page table");
     memory::mmu::identity_map_kernel(page_table);
+
+    // Set the identity mapped page table as that used for the kernel in kmain
+    page_table.set_as_page_table();
+
+    // Note that by returning, we switch to supervisor mode, and move into `kmain`
+}
+
+/// Entry point for the core kernel functionality. Interrupts are enabled in this function, and we are in supervisor
+/// mode, with paging enabled.
+#[no_mangle]
+#[repr(align(4))]
+pub extern "C" fn kmain() {
+    info!("Starting supervisor mode");
 }
