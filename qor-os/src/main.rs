@@ -36,4 +36,10 @@ pub extern "C" fn kinit() {
     let dynamic_page_allocation_size = qor_core::memory::KiByteCount::new(1024);
     memory::initialize_page_bitmap_allocator(dynamic_page_allocation_size.convert())
         .expect("Unable to initialize bitmap allocator");
+
+    // Construct page table which identity maps the kernel
+    let page_table = memory::PAGE_BUMP_ALLOCATOR
+        .allocate_object(memory::mmu::ManagedPageTable::empty())
+        .expect("Unable to allocate space for root kernel page table");
+    memory::mmu::identity_map_kernel(page_table);
 }

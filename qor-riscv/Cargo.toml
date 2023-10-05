@@ -11,3 +11,4 @@ std=[]
 [dependencies]
 paste = "1.0.14"
 qor-core={path="../qor-core"}
+static_assertions = "1.1.0"

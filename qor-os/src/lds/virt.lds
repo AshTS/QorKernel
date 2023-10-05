@@ -14,6 +14,7 @@ PHDRS {
 
 SECTIONS {  
     .text : {
+        . = ALIGN(4096);
         PROVIDE(_text_start = .);
 
         *(.text.init)
@@ -29,6 +30,7 @@ SECTIONS {
     PROVIDE(_global_pointer = .);
 
     .rodata : {
+        . = ALIGN(4096);
         PROVIDE(_rodata_start = .);
         *(.rodata .rodata.*)
         PROVIDE(_rodata_end = .);
@@ -43,11 +45,12 @@ SECTIONS {
     } >ram AT>ram :data
 
     .bss : {
+        . = ALIGN(4096);
         PROVIDE(_bss_start = .);
         *(.sbss .sbss.*) *(.bss .bss.*)
+        . = ALIGN(4096);
         PROVIDE(_bss_end = .);
     } >ram AT>ram :bss
-
 
     PROVIDE(_memory_start = ORIGIN(ram));
 

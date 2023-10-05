@@ -67,6 +67,7 @@ version = "0.1.0"
 dependencies = [
  "paste",
  "qor-core",
+ "static_assertions",
 ]
 
 [[package]]
@@ -77,6 +78,12 @@ checksum = "5267fca4496028628a95160fc423a33e8b2e6af8a5302579e322e4b520293cae"
 dependencies = [
  "proc-macro2",
 ]
+
+[[package]]
+name = "static_assertions"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
 name = "unicode-ident"
