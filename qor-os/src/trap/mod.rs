@@ -17,9 +17,9 @@ pub extern "C" fn m_trap(
     hart: usize,
     status: usize,
     frame: &'static TrapFrame,
-) {
+) -> usize {
     let trap_info = TrapInfo::from_raw(epc, tval, cause, hart, status, frame);
-    crate::trap::handle_trap(&trap_info);
+    crate::trap::handle_trap(&trap_info)
 }
 
 /// Initialize the trap frame
