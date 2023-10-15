@@ -14,6 +14,7 @@ mod drivers;
 mod kprint;
 mod memory;
 mod panic;
+mod trap;
 
 /// Entry point for the boot sequence, no interrupts are enabled when this function is called, and we are in machine
 /// mode, no paging is enabled.
@@ -46,6 +47,9 @@ pub extern "C" fn kinit() {
     // Set the identity mapped page table as that used for the kernel in kmain
     page_table.set_as_page_table();
 
+    // Initializing the trap frame
+    crate::trap::initialize_trap_frame();
+
     // Note that by returning, we switch to supervisor mode, and move into `kmain`
 }
 
@@ -55,4 +59,8 @@ pub extern "C" fn kinit() {
 #[repr(align(4))]
 pub extern "C" fn kmain() {
     info!("Starting supervisor mode");
+
+    error!("Triggering an interrupt!");
+
+    unsafe { core::ptr::null_mut::<u8>().read() };
 }

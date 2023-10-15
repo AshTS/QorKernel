@@ -10,3 +10,4 @@ extern crate qor_core;
 
 pub mod drivers;
 pub mod memory;
+pub mod trap;

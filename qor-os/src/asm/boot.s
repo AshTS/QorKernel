@@ -48,7 +48,7 @@ _start_init:
     la t1, kinit
     csrw mepc, t1
 
-    # Set the trap vector to the proper address
+    # Set the trap vector to a wait loop as an interrupt here means that kernel initialization has failed
     la t2, _wfi_loop
     csrw mtvec, t2
 
@@ -75,6 +75,10 @@ _after_kinit:
     csrw pmpcfg0, t4
     li t5, (1 << 55) - 1
     csrw pmpaddr0, t5
+
+    # Set the trap vector to a wait loop as an interrupt here means that kernel initialization has failed
+    la t2, asm_trap_vector
+    csrw mtvec, t2
 
     # Set up the return address for when `kmain` returns
     la ra, _wfi_loop
