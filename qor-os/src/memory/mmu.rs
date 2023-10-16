@@ -204,5 +204,13 @@ pub fn identity_map_kernel(table: &mut ManagedPageTable) {
         EntryPermissionFlags::ReadWrite,
     );
 
+    // CLINT Device
+    table.id_map_range(
+        PhysicalAddress(0x200_0000),
+        PhysicalAddress(0x201_0000),
+        GlobalUserFlags::None,
+        EntryPermissionFlags::ReadWrite,
+    );
+
     info!("Completed identity mapping kernel space");
 }

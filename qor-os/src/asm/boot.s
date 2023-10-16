@@ -70,6 +70,10 @@ _after_kinit:
 	la t1, kmain
 	csrw mepc, t1
 
+    # Enable Interrupts
+    li t3, (1 << 3) | (1 << 8) | (1 << 7) | (1 << 11)
+    csrw mie, t3
+
     # Set up the PMP registers correctly
     li t4, 31
     csrw pmpcfg0, t4

@@ -64,15 +64,25 @@ impl TrapCause {
             12 => Some(Self::Synchronous(SynchronousTrap::InstructionPageFault)),
             13 => Some(Self::Synchronous(SynchronousTrap::LoadPageFault)),
             15 => Some(Self::Synchronous(SynchronousTrap::StorePageFault)),
-            0x8000_0000 => Some(Self::AsynchronousTrap(AsynchronousTrap::UserSoftware)),
-            0x8000_0001 => Some(Self::AsynchronousTrap(AsynchronousTrap::SupervisorSoftware)),
-            0x8000_0003 => Some(Self::AsynchronousTrap(AsynchronousTrap::MachineSoftware)),
-            0x8000_0004 => Some(Self::AsynchronousTrap(AsynchronousTrap::UserTimer)),
-            0x8000_0005 => Some(Self::AsynchronousTrap(AsynchronousTrap::SupervisorTimer)),
-            0x8000_0007 => Some(Self::AsynchronousTrap(AsynchronousTrap::MachineTimer)),
-            0x8000_0008 => Some(Self::AsynchronousTrap(AsynchronousTrap::UserExternal)),
-            0x8000_0009 => Some(Self::AsynchronousTrap(AsynchronousTrap::SupervisorExternal)),
-            0x8000_000b => Some(Self::AsynchronousTrap(AsynchronousTrap::MachineExternal)),
+            0x8000_0000_0000_0000 => Some(Self::AsynchronousTrap(AsynchronousTrap::UserSoftware)),
+            0x8000_0000_0000_0001 => {
+                Some(Self::AsynchronousTrap(AsynchronousTrap::SupervisorSoftware))
+            }
+            0x8000_0000_0000_0003 => {
+                Some(Self::AsynchronousTrap(AsynchronousTrap::MachineSoftware))
+            }
+            0x8000_0000_0000_0004 => Some(Self::AsynchronousTrap(AsynchronousTrap::UserTimer)),
+            0x8000_0000_0000_0005 => {
+                Some(Self::AsynchronousTrap(AsynchronousTrap::SupervisorTimer))
+            }
+            0x8000_0000_0000_0007 => Some(Self::AsynchronousTrap(AsynchronousTrap::MachineTimer)),
+            0x8000_0000_0000_0008 => Some(Self::AsynchronousTrap(AsynchronousTrap::UserExternal)),
+            0x8000_0000_0000_0009 => {
+                Some(Self::AsynchronousTrap(AsynchronousTrap::SupervisorExternal))
+            }
+            0x8000_0000_0000_000b => {
+                Some(Self::AsynchronousTrap(AsynchronousTrap::MachineExternal))
+            }
             _ => None,
         }
     }

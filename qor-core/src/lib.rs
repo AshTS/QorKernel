@@ -16,4 +16,5 @@ pub mod interfaces;
 pub mod logging;
 
 pub mod memory;
+pub mod structures;
 pub mod utils;

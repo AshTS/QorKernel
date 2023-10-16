@@ -58,9 +58,11 @@ pub extern "C" fn kinit() {
 #[no_mangle]
 #[repr(align(4))]
 pub extern "C" fn kmain() {
+    use qor_core::drivers::timer::HardwareTimerDriver;
     info!("Starting supervisor mode");
 
-    error!("Triggering an interrupt!");
-
-    unsafe { core::ptr::null_mut::<u8>().read() };
+    let hart_id = qor_core::structures::id::HartID::from(0);
+    crate::drivers::CLINT_DRIVER
+        .set_time_rate(hart_id, qor_core::structures::time::Hertz(100))
+        .expect("Unable to set the CLINT Timer rate");
 }
