@@ -4,6 +4,9 @@ pub use bitmap::*;
 pub mod bump;
 pub use bump::*;
 
+pub mod byte;
+pub use byte::*;
+
 pub mod mmu;
 pub use qor_riscv::memory::mmu::addresses::{PhysicalAddress, VirtualAddress};
 

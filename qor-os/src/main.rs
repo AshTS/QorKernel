@@ -9,6 +9,8 @@
 #[macro_use]
 extern crate qor_core;
 
+extern crate alloc;
+
 mod asm;
 mod drivers;
 mod kprint;
@@ -61,6 +63,11 @@ pub extern "C" fn kmain() {
     use qor_core::drivers::timer::HardwareTimerDriver;
     info!("Starting supervisor mode");
 
+    // Initialize the byte grained allocator
+    let byte_allocator_memory = qor_core::memory::KiByteCount::new(16);
+    memory::initialize_global_byte_allocator(byte_allocator_memory.convert());
+
+    // Initialize the CLINT timer
     let hart_id = qor_core::structures::id::HartID::from(0);
     crate::drivers::CLINT_DRIVER
         .set_time_rate(hart_id, qor_core::structures::time::Hertz(100))
