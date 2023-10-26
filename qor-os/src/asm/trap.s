@@ -63,6 +63,7 @@ skip_float_save:
     csrr a4, mstatus
     mv a5, t5
     ld sp, 520(a5)
+    csrr a6, satp
 
     # Call the m_trap function
     call m_trap

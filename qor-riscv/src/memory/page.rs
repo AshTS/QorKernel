@@ -1,8 +1,13 @@
+use qor_core::memory::MemoryUnit;
+
 pub const PAGE_SIZE: usize = 4096;
 
 #[repr(C)]
 #[repr(align(4096))]
 pub struct Page([u8; PAGE_SIZE]);
+
+#[allow(clippy::module_name_repetitions)]
+pub type PageCount = MemoryUnit<{ PAGE_SIZE }>;
 
 impl Page {
     /// Creates a new [`Page`] which is zero allocated.

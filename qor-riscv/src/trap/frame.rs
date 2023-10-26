@@ -1,3 +1,5 @@
+use qor_core::structures::id::HartID;
+
 use crate::memory::Page;
 
 #[repr(C)]
@@ -9,7 +11,7 @@ pub struct TrapFrame {
     pub satp: u64,
     pub trap_stack: *mut Page,
     pub trap_stack_size: usize,
-    pub hart_id: u64,
+    pub hart_id: HartID,
 }
 
 /// Set the active trap frame for this hart.
@@ -21,3 +23,5 @@ pub struct TrapFrame {
 pub fn set_trap_frame(ptr: &'static mut TrapFrame) {
     riscv::register::mscratch::write(ptr as *mut TrapFrame as usize);
 }
+
+unsafe impl core::marker::Sync for TrapFrame {}

@@ -1,9 +1,13 @@
 #![allow(dead_code)]
 
-use qor_core::memory::{ByteCount, MemoryUnit};
+use qor_core::{
+    memory::{ByteCount, MemoryUnit},
+    structures::id::PID,
+};
 use qor_riscv::memory::{
     mmu::{
         addresses::{PhysicalAddress, VirtualAddress},
+        construct_satp,
         entry::{EntryPermissionFlags, GlobalUserFlags},
         table::PageTable,
     },
@@ -148,51 +152,57 @@ impl ManagedPageTable {
     pub fn set_as_page_table(&'static mut self) {
         qor_riscv::memory::mmu::set_page_table(&mut self.0);
     }
+
+    /// Construct a SATP from this page table
+    #[must_use]
+    pub fn construct_satp(&self, pid: PID) -> usize {
+        construct_satp(pid.0, &self.0)
+    }
 }
 
 /// Identity map the kernel to a `ManagedPageTable` stored on the heap
-pub fn identity_map_kernel(table: &mut ManagedPageTable) {
+pub fn identity_map_kernel(table: &mut ManagedPageTable, gu_flags: GlobalUserFlags) {
     info!("Identity mapping kernel space");
 
     table.id_map_range(
         unsafe { crate::asm::HEAP_START }.into(),
         unsafe { crate::asm::HEAP_END }.into(),
-        GlobalUserFlags::None,
+        gu_flags,
         EntryPermissionFlags::ReadWrite,
     );
 
     table.id_map_range(
         unsafe { crate::asm::TEXT_START }.into(),
         unsafe { crate::asm::TEXT_END }.into(),
-        GlobalUserFlags::None,
+        gu_flags,
         EntryPermissionFlags::ReadExecute,
     );
 
     table.id_map_range(
         unsafe { crate::asm::RODATA_START }.into(),
         unsafe { crate::asm::RODATA_END }.into(),
-        GlobalUserFlags::None,
+        gu_flags,
         EntryPermissionFlags::ReadExecute,
     );
 
     table.id_map_range(
         unsafe { crate::asm::DATA_START }.into(),
         unsafe { crate::asm::DATA_END }.into(),
-        GlobalUserFlags::None,
+        gu_flags,
         EntryPermissionFlags::ReadWrite,
     );
 
     table.id_map_range(
         unsafe { crate::asm::BSS_START }.into(),
         unsafe { crate::asm::BSS_END }.into(),
-        GlobalUserFlags::None,
+        gu_flags,
         EntryPermissionFlags::ReadWrite,
     );
 
     table.id_map_range(
         unsafe { crate::asm::KERNEL_STACK_START }.into(),
         unsafe { crate::asm::KERNEL_STACK_END }.into(),
-        GlobalUserFlags::None,
+        gu_flags,
         EntryPermissionFlags::ReadWrite,
     );
 
@@ -200,7 +210,7 @@ pub fn identity_map_kernel(table: &mut ManagedPageTable) {
     table.id_map_range(
         PhysicalAddress(0x1000_0000),
         PhysicalAddress(0x1000_1000),
-        GlobalUserFlags::None,
+        gu_flags,
         EntryPermissionFlags::ReadWrite,
     );
 
@@ -208,7 +218,7 @@ pub fn identity_map_kernel(table: &mut ManagedPageTable) {
     table.id_map_range(
         PhysicalAddress(0x200_0000),
         PhysicalAddress(0x201_0000),
-        GlobalUserFlags::None,
+        gu_flags,
         EntryPermissionFlags::ReadWrite,
     );
 

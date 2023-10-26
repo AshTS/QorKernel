@@ -16,7 +16,7 @@ pub fn handle_trap(info: &TrapInfo) -> usize {
             debug!("Breakpoint at 0x{:x}", info.trap_pc);
         }
         _ => {
-            panic!("Unhandled trap: {:?}", info);
+            panic!("Unhandled trap: {:x?}", info);
         }
     }
 

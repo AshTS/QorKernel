@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use qor_core::memory::{
     allocators::page::{bitmap::PageBitmapAllocator, bump::AllocationError},
     MemoryUnit,
@@ -44,3 +46,42 @@ pub fn initialize_page_bitmap_allocator(
     );
     Ok(())
 }
+
+/// Sequence of consecutively allocated pages from the global page bitmap allocator
+pub struct PageSequence {
+    ptr: core::ptr::NonNull<Page>,
+    page_count: usize,
+}
+
+impl PageSequence {
+    /// Get the pointer to the beginning of the page sequence
+    #[must_use]
+    pub const fn inner(&self) -> *mut Page {
+        self.ptr.as_ptr()
+    }
+
+    /// Construct a new `PageSequence` from a length, allocating it on the `GLOBAL_PAGE_BITMAP_ALLOCATOR`
+    pub fn alloc(length: usize) -> Self {
+        let page_sequence = get_page_bitmap_allocator()
+            .allocate(length)
+            .expect("Unable to allocate page sequence");
+
+        Self {
+            ptr: core::ptr::NonNull::new(page_sequence).expect("Page sequence pointer is null"),
+            page_count: length,
+        }
+    }
+}
+
+impl core::ops::Drop for PageSequence {
+    fn drop(&mut self) {
+        // Safety: The only way to safely construct a `PageSequence` is from the `PageBitmapAllocator`
+        unsafe {
+            get_page_bitmap_allocator()
+                .free(self.inner(), self.page_count)
+                .expect("Unable to deallocate page sequence");
+        }
+    }
+}
+
+unsafe impl Sync for PageSequence {}

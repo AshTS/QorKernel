@@ -8,3 +8,25 @@ impl core::convert::From<usize> for HartID {
         Self(value)
     }
 }
+
+/// Process Identifier
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct PID(pub u16);
+
+impl core::convert::From<u16> for PID {
+    fn from(value: u16) -> Self {
+        Self(value)
+    }
+}
+
+/// File Descriptor
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct FileDescriptor(pub u64);
+
+impl core::convert::From<u64> for FileDescriptor {
+    fn from(value: u64) -> Self {
+        Self(value)
+    }
+}

@@ -326,7 +326,11 @@ impl AllocationTable {
             for index in 0..ALLOCATION_TABLE_LENGTH {
                 if let Some(guard) = self.entries[index].lock() {
                     if !guard.valid() {
-                        return Some(((index + self.start_index).try_into().unwrap(), self.pointer_upper_32, guard));
+                        return Some((
+                            (index + self.start_index).try_into().unwrap(),
+                            self.pointer_upper_32,
+                            guard,
+                        ));
                     }
                 }
             }

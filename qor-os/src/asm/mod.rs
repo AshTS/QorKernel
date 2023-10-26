@@ -5,6 +5,7 @@ use core::arch::global_asm;
 global_asm!(include_str!("boot.s"));
 global_asm!(include_str!("mem.s"));
 global_asm!(include_str!("trap.s"));
+global_asm!(include_str!("switch_to_user.s"));
 
 // Values defined in assembly which now need to be brought into rust
 extern "C" {

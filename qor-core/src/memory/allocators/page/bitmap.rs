@@ -270,6 +270,8 @@ impl<Page> Default for PageBitmapAllocator<Page> {
     }
 }
 
+unsafe impl<'a, Page, T> Sync for PageBox<'a, Page, T> where T: Sync {}
+
 #[cfg(feature = "std")]
 #[cfg(test)]
 mod test {
