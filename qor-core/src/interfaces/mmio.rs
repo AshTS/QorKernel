@@ -30,4 +30,20 @@ impl MMIOInterface {
     pub unsafe fn write_offset<T: Copy>(&self, offset: usize, data: T) {
         ((self.base_address + offset) as *mut T).write_volatile(data);
     }
+
+    /// Atomic access to values at an offset within the mapped memory.
+    ///
+    /// # Safety
+    ///
+    /// The offset must be a valid offset from the base address, must be properly aligned for the type `T`.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if a null pointer is produced by the offset.
+    #[must_use]
+    pub unsafe fn atomic_access<T>(&self, offset: usize) -> &atomic::Atomic<T> {
+        ((self.base_address + offset) as *const atomic::Atomic<T>)
+            .as_ref()
+            .unwrap()
+    }
 }

@@ -9,6 +9,7 @@ edition = "2021"
 std=[]
 
 [dependencies]
+atomic = "0.6.0"
 paste = "1.0.14"
 qor-core={path="../qor-core"}
 riscv = "0.10.1"

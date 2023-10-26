@@ -3,6 +3,15 @@
 version = 3
 
 [[package]]
+name = "atomic"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8d818003e740b63afc82337e3160717f4f63078720a810b7b903e70a5d1d2994"
+dependencies = [
+ "bytemuck",
+]
+
+[[package]]
 name = "atomic_ref"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -13,6 +22,12 @@ name = "bit_field"
 version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dc827186963e592360843fb5ba4b973e145841266c1357f7180c43526f2e5b61"
+
+[[package]]
+name = "bytemuck"
+version = "1.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "374d28ec25809ee0e23827c2ab573d729e293f281dfe393500e7ad618baa61c6"
 
 [[package]]
 name = "const_format"
@@ -84,6 +99,7 @@ dependencies = [
 name = "qor-core"
 version = "0.1.0"
 dependencies = [
+ "atomic",
  "atomic_ref",
  "const_format",
 ]
@@ -92,6 +108,7 @@ dependencies = [
 name = "qor-riscv"
 version = "0.1.0"
 dependencies = [
+ "atomic",
  "paste",
  "qor-core",
  "riscv",
