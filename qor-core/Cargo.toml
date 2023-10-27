@@ -7,7 +7,8 @@ edition = "2021"
 
 [features]
 std=[]
-# default=["std"]
+alloc=[]
+default=["std", "alloc"]
 
 [dependencies]
 atomic = "0.6.0"

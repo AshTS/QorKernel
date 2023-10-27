@@ -12,5 +12,5 @@ debug = true
 [dependencies]
 atomic_ref = "0.2.1"
 const_format = "0.2.31"
-qor-core = {path="../qor-core"}
+qor-core = {default-features = false, path="../qor-core", features=["alloc"]}
 qor-riscv = {path="../qor-riscv"}

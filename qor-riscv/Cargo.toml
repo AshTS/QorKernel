@@ -11,6 +11,6 @@ std=[]
 [dependencies]
 atomic = "0.6.0"
 paste = "1.0.14"
-qor-core={path="../qor-core"}
+qor-core={default-features = false, path="../qor-core", features=["alloc"]}
 riscv = "0.10.1"
 static_assertions = "1.1.0"
