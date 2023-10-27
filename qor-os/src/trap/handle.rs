@@ -1,5 +1,3 @@
-use qor_core::{drivers::timer::HardwareTimerDriver, structures::time::Hertz};
-
 use super::{
     external::handle_external_interrupt,
     structures::{AsynchronousTrap, SynchronousTrap, TrapCause, TrapInfo},
@@ -11,9 +9,7 @@ pub fn handle_trap(info: &TrapInfo) -> usize {
     match info.cause {
         TrapCause::AsynchronousTrap(AsynchronousTrap::MachineTimer) => {
             debug!("Machine timer interrupt");
-            crate::drivers::CLINT_DRIVER
-                .set_time_rate(info.hart.into(), Hertz(1))
-                .expect("Unable to set the CLINT Timer rate");
+            crate::drivers::CLINT_DRIVER.handle_interrupt(info.hart.into());
         }
         TrapCause::AsynchronousTrap(AsynchronousTrap::MachineExternal) => {
             handle_external_interrupt(info);

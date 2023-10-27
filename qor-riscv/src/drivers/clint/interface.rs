@@ -1,11 +1,15 @@
 use qor_core::{
     drivers::timer::HardwareTimerDriver,
     interfaces::mmio::MMIOInterface,
-    structures::{id::HartID, time::Microseconds},
+    structures::{
+        id::HartID,
+        time::{Hertz, Microseconds},
+    },
 };
 
 pub struct HardwareTimer {
     mmio: MMIOInterface,
+    step_size: atomic::Atomic<u64>,
 }
 
 impl HardwareTimer {
@@ -18,7 +22,27 @@ impl HardwareTimer {
     pub const unsafe fn new(base_address: usize) -> Self {
         Self {
             mmio: MMIOInterface::new(base_address),
+            step_size: atomic::Atomic::new(1_000_000),
         }
+    }
+
+    /// Function which is called every time the timer interrupt is fired.
+    pub fn handle_interrupt(&self, hart_id: HartID) {
+        let step_size = self.step_size.load(atomic::Ordering::Acquire);
+        self.set_time(hart_id, Microseconds(step_size))
+            .expect("Unable to set the CLINT Timer rate");
+    }
+
+    /// Set the frequency for the timer. Note that this impacts the frequency of the timer on every HART.
+    pub fn set_frequency(&self, frequency: Hertz) {
+        self.step_size
+            .store(1_000_000 / frequency.0, atomic::Ordering::Release);
+    }
+
+    /// Start the timer for a given HART
+    pub fn start_timer(&self, hart_id: HartID) {
+        self.set_time(hart_id, Microseconds(0))
+            .expect("Unable to start CLINT timer");
     }
 }
 

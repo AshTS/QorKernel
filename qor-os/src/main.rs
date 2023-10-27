@@ -65,7 +65,6 @@ pub extern "C" fn kinit() {
 #[repr(align(4))]
 pub extern "C" fn kmain() {
     use crate::qor_core::drivers::plic::PLICDriverInterface;
-    use qor_core::drivers::timer::HardwareTimerDriver;
 
     let hart_id = qor_core::structures::id::HartID::from(0);
     info!("Starting supervisor mode");
@@ -92,8 +91,7 @@ pub extern "C" fn kmain() {
     info!("PLIC Initialized");
 
     // Initialize the CLINT timer
-    crate::drivers::CLINT_DRIVER
-        .set_time_rate(hart_id, qor_core::structures::time::Hertz(100))
-        .expect("Unable to set the CLINT Timer rate");
+    crate::drivers::CLINT_DRIVER.set_frequency(qor_core::structures::time::Hertz(2));
+    crate::drivers::CLINT_DRIVER.start_timer(hart_id);
     info!("CLINT Initialized");
 }
