@@ -1,11 +1,17 @@
 use qor_core::drivers::uart::UARTDriverInterface;
-use qor_riscv::drivers::{clint::HardwareTimer, uart::UARTDriver};
+use qor_riscv::drivers::{clint::HardwareTimer, plic::PLICDriver, uart::UARTDriver};
+
+pub mod interrupts;
+pub use interrupts::*;
 
 // Safety: This is the base address given in the specification for the `virt` platform by QEMU (https://github.com/qemu/qemu/blob/master/hw/riscv/virt.c)
 pub static UART_DRIVER: UARTDriver = unsafe { UARTDriver::new(0x1000_0000) };
 
 // Safety: This is the base address given in the specification for the `virt` platform by QEMU (https://github.com/qemu/qemu/blob/master/hw/riscv/virt.c)
 pub static CLINT_DRIVER: HardwareTimer = unsafe { HardwareTimer::new(0x200_0000) };
+
+// Safety: This is the base address given in the specification for the `virt` platform by QEMU (https://github.com/qemu/qemu/blob/master/hw/riscv/virt.c)
+pub static PLIC_DRIVER: PLICDriver = unsafe { PLICDriver::new(0xc00_0000) };
 
 /// Initialize the UART Driver
 ///

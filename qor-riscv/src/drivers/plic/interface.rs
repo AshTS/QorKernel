@@ -8,6 +8,19 @@ pub struct PLICDriver {
     mmio: MMIOInterface,
 }
 
+impl PLICDriver {
+    /// # Safety
+    ///
+    /// This function is unsafe because it takes a raw address and assumes that it is a valid
+    /// address for the PLIC.
+    #[must_use]
+    pub const unsafe fn new(base_address: usize) -> Self {
+        Self {
+            mmio: MMIOInterface::new(base_address),
+        }
+    }
+}
+
 impl PLICDriverInterface for PLICDriver {
     type PLICDriverError = ();
     type InterruptSource = InterruptSource;
@@ -23,19 +36,39 @@ impl PLICDriverInterface for PLICDriver {
 
     fn enable_interrupt_source(
         &self,
+        hart_id: HartID,
         source: Self::InterruptSource,
     ) -> Result<(), Self::PLICDriverError> {
-        unsafe { raw::atomic_interrupt_enable_register(&self.mmio, source) }
-            .fetch_or(1 << source as u32, core::sync::atomic::Ordering::AcqRel);
+        let source_index = source as u32;
+
+        if source_index < 32 {
+            unsafe { raw::atomic_interrupt_enable_low_register(&self.mmio, hart_id) }
+            .fetch_or(1 << source_index, core::sync::atomic::Ordering::AcqRel);
+        }
+        else {
+            unsafe { raw::atomic_interrupt_enable_high_register(&self.mmio, hart_id) }
+            .fetch_or(1 << (source_index - 32), core::sync::atomic::Ordering::AcqRel);
+        }
+        
         Ok(())
     }
 
     fn disable_interrupt_source(
         &self,
+        hart_id: HartID,
         source: Self::InterruptSource,
     ) -> Result<(), Self::PLICDriverError> {
-        unsafe { raw::atomic_interrupt_enable_register(&self.mmio, source) }
-            .fetch_and(!(1 << source as u32), core::sync::atomic::Ordering::AcqRel);
+        let source_index = source as u32;
+
+        if source_index < 32 {
+            unsafe { raw::atomic_interrupt_enable_low_register(&self.mmio, hart_id) }
+            .fetch_and(!(1 << source_index), core::sync::atomic::Ordering::AcqRel);
+        }
+        else {
+            unsafe { raw::atomic_interrupt_enable_high_register(&self.mmio, hart_id) }
+            .fetch_and(!(1 << (source_index - 32)), core::sync::atomic::Ordering::AcqRel);
+        }
+
         Ok(())
     }
 

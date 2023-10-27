@@ -64,16 +64,31 @@ pub extern "C" fn kinit() {
 #[no_mangle]
 #[repr(align(4))]
 pub extern "C" fn kmain() {
+    use crate::qor_core::drivers::plic::PLICDriverInterface;
     use qor_core::drivers::timer::HardwareTimerDriver;
+    
+    let hart_id = qor_core::structures::id::HartID::from(0);
     info!("Starting supervisor mode");
 
     // Initialize the byte grained allocator
     let byte_allocator_memory = qor_core::memory::KiByteCount::new(16);
     memory::initialize_global_byte_allocator(byte_allocator_memory.convert());
 
+    // Set up the PLIC
+    let plic = &crate::drivers::PLIC_DRIVER;
+    plic.initialize().expect("Unable to initialize PLIC");
+    plic.set_interrupt_priority(
+        drivers::UART_INTERRUPT,
+        qor_riscv::drivers::plic::InterruptPriority::Priority7,
+    )
+    .expect("Unable to set UART interrupt priority");
+    plic.set_hart_threshold(hart_id, qor_riscv::drivers::plic::InterruptPriority::Priority1).expect("Unable to set PLIC threshold");
+    plic.enable_interrupt_source(hart_id, drivers::UART_INTERRUPT).expect("Unable to enable UART interrupts");
+    info!("PLIC Initialized");
+
     // Initialize the CLINT timer
-    let hart_id = qor_core::structures::id::HartID::from(0);
     crate::drivers::CLINT_DRIVER
         .set_time_rate(hart_id, qor_core::structures::time::Hertz(100))
         .expect("Unable to set the CLINT Timer rate");
+    info!("CLINT Initialized");
 }

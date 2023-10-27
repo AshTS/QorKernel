@@ -18,23 +18,25 @@ pub trait PLICDriverInterface {
     /// Returns an error if initialization failed.
     fn initialize(&self) -> Result<(), Self::PLICDriverError>;
 
-    /// Enable a specific interrupt source.
+    /// Enable a specific interrupt source for a particular hart.
     ///
     /// # Errors
     ///
     /// Returns an error if the interrupt source could not be enabled.
     fn enable_interrupt_source(
         &self,
+        hart_id: HartID,
         source: Self::InterruptSource,
     ) -> Result<(), Self::PLICDriverError>;
 
-    /// Disable a specific interrupt source.
+    /// Disable a specific interrupt source for a particular hart.
     ///
     /// # Errors
     ///
     /// Returns an error if the interrupt source could not be enabled.
     fn disable_interrupt_source(
         &self,
+        hart_id: HartID,
         source: Self::InterruptSource,
     ) -> Result<(), Self::PLICDriverError>;
 

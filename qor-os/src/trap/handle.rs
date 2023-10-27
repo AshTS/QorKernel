@@ -1,6 +1,6 @@
 use qor_core::{drivers::timer::HardwareTimerDriver, structures::time::Hertz};
 
-use super::structures::{AsynchronousTrap, SynchronousTrap, TrapCause, TrapInfo};
+use super::{structures::{AsynchronousTrap, SynchronousTrap, TrapCause, TrapInfo}, external::handle_external_interrupt};
 
 #[allow(clippy::module_name_repetitions)]
 pub fn handle_trap(info: &TrapInfo) -> usize {
@@ -9,8 +9,11 @@ pub fn handle_trap(info: &TrapInfo) -> usize {
         TrapCause::AsynchronousTrap(AsynchronousTrap::MachineTimer) => {
             debug!("Machine timer interrupt");
             crate::drivers::CLINT_DRIVER
-                .set_time_rate(info.hart.into(), Hertz(3))
+                .set_time_rate(info.hart.into(), Hertz(1))
                 .expect("Unable to set the CLINT Timer rate");
+        }
+        TrapCause::AsynchronousTrap(AsynchronousTrap::MachineExternal) => {
+            handle_external_interrupt(info);
         }
         TrapCause::Synchronous(SynchronousTrap::Breakpoint) => {
             debug!("Breakpoint at 0x{:x}", info.trap_pc);

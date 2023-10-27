@@ -3,6 +3,7 @@ use qor_riscv::trap::frame::TrapFrame;
 
 use self::structures::TrapInfo;
 
+pub mod external;
 pub mod handle;
 pub use handle::*;
 pub mod structures;
