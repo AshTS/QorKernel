@@ -1,6 +1,9 @@
 use qor_core::{drivers::timer::HardwareTimerDriver, structures::time::Hertz};
 
-use super::{structures::{AsynchronousTrap, SynchronousTrap, TrapCause, TrapInfo}, external::handle_external_interrupt};
+use super::{
+    external::handle_external_interrupt,
+    structures::{AsynchronousTrap, SynchronousTrap, TrapCause, TrapInfo},
+};
 
 #[allow(clippy::module_name_repetitions)]
 pub fn handle_trap(info: &TrapInfo) -> usize {

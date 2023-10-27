@@ -66,7 +66,7 @@ pub extern "C" fn kinit() {
 pub extern "C" fn kmain() {
     use crate::qor_core::drivers::plic::PLICDriverInterface;
     use qor_core::drivers::timer::HardwareTimerDriver;
-    
+
     let hart_id = qor_core::structures::id::HartID::from(0);
     info!("Starting supervisor mode");
 
@@ -82,8 +82,13 @@ pub extern "C" fn kmain() {
         qor_riscv::drivers::plic::InterruptPriority::Priority7,
     )
     .expect("Unable to set UART interrupt priority");
-    plic.set_hart_threshold(hart_id, qor_riscv::drivers::plic::InterruptPriority::Priority1).expect("Unable to set PLIC threshold");
-    plic.enable_interrupt_source(hart_id, drivers::UART_INTERRUPT).expect("Unable to enable UART interrupts");
+    plic.set_hart_threshold(
+        hart_id,
+        qor_riscv::drivers::plic::InterruptPriority::Priority1,
+    )
+    .expect("Unable to set PLIC threshold");
+    plic.enable_interrupt_source(hart_id, drivers::UART_INTERRUPT)
+        .expect("Unable to enable UART interrupts");
     info!("PLIC Initialized");
 
     // Initialize the CLINT timer

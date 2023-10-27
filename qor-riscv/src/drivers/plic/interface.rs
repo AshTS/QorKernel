@@ -43,13 +43,14 @@ impl PLICDriverInterface for PLICDriver {
 
         if source_index < 32 {
             unsafe { raw::atomic_interrupt_enable_low_register(&self.mmio, hart_id) }
-            .fetch_or(1 << source_index, core::sync::atomic::Ordering::AcqRel);
+                .fetch_or(1 << source_index, core::sync::atomic::Ordering::AcqRel);
+        } else {
+            unsafe { raw::atomic_interrupt_enable_high_register(&self.mmio, hart_id) }.fetch_or(
+                1 << (source_index - 32),
+                core::sync::atomic::Ordering::AcqRel,
+            );
         }
-        else {
-            unsafe { raw::atomic_interrupt_enable_high_register(&self.mmio, hart_id) }
-            .fetch_or(1 << (source_index - 32), core::sync::atomic::Ordering::AcqRel);
-        }
-        
+
         Ok(())
     }
 
@@ -62,11 +63,12 @@ impl PLICDriverInterface for PLICDriver {
 
         if source_index < 32 {
             unsafe { raw::atomic_interrupt_enable_low_register(&self.mmio, hart_id) }
-            .fetch_and(!(1 << source_index), core::sync::atomic::Ordering::AcqRel);
-        }
-        else {
-            unsafe { raw::atomic_interrupt_enable_high_register(&self.mmio, hart_id) }
-            .fetch_and(!(1 << (source_index - 32)), core::sync::atomic::Ordering::AcqRel);
+                .fetch_and(!(1 << source_index), core::sync::atomic::Ordering::AcqRel);
+        } else {
+            unsafe { raw::atomic_interrupt_enable_high_register(&self.mmio, hart_id) }.fetch_and(
+                !(1 << (source_index - 32)),
+                core::sync::atomic::Ordering::AcqRel,
+            );
         }
 
         Ok(())
