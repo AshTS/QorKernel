@@ -7,7 +7,7 @@ use super::{
     entry::{EntryPermissionFlags, GlobalUserFlags, PageTableEntry},
 };
 
-const LEVEL_SIZES: [usize; 3] = [4096, 4096 * 4096, 4096 * 4096 * 4096];
+const LEVEL_SIZES: [usize; 3] = [4096, 4096 * 512, 4096 * 512 * 512];
 
 /// Array of 512 [`PageTableEntry`]s which matches the size and alignment requirements of a [`Page`].
 ///
