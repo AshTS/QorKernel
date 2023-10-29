@@ -228,6 +228,14 @@ pub fn identity_map_kernel(table: &mut ManagedPageTable, gu_flags: GlobalUserFla
         PhysicalAddress(0xd00_0000),
         gu_flags,
         EntryPermissionFlags::ReadWrite,
+    );    
+
+    // Virt IO Devices
+    table.id_map_range(
+        PhysicalAddress(0x1000_0000),
+        PhysicalAddress(0x1000_9000),
+        gu_flags,
+        EntryPermissionFlags::ReadWrite,
     );
 
     info!("Completed identity mapping kernel space");
