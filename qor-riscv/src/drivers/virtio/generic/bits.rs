@@ -3,4 +3,4 @@ pub const STATUS_BIT_DRIVER: u32 = 2;
 pub const STATUS_BIT_DRIVER_OK: u32 = 4;
 pub const STATUS_BIT_FEATURES_OK: u32 = 8;
 pub const STATUS_BIT_DEVICE_NEEDS_RESET: u32 = 64;
-pub const STATUS_BIT_FAILED: u32 = 128; 
+pub const STATUS_BIT_FAILED: u32 = 128;

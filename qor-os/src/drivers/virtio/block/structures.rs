@@ -43,5 +43,5 @@ pub struct Request {
     pub reserved: u32,
     pub sector: u64,
     pub data: *mut u8,
-    pub status: core::sync::atomic::AtomicU8
+    pub status: core::sync::atomic::AtomicU8,
 }

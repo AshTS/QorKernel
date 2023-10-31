@@ -21,9 +21,9 @@ pub struct Descriptor {
 
 impl Descriptor {
     /// Construct a new descriptor.
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// This function will panic if the length cannot fit in 32 bits.
     #[must_use]
     pub fn new(addr: usize, len: usize, flags: u16, next: u16) -> Self {
@@ -57,7 +57,7 @@ pub struct UsedRing {
     pub flags: u16,
     pub idx: u16,
     pub ring: [UsedElement; VIRTIO_RING_SIZE_USIZE],
-    pub available_event: u16
+    pub available_event: u16,
 }
 
 #[repr(C)]
@@ -67,11 +67,14 @@ pub struct Queue {
     pub available: AvailableRing,
     pub index: u16,
     pub acknowledged_used_index: u16,
-    pub padding0: [u8; PAGE_SIZE - 4 - core::mem::size_of::<AvailableRing>() - VIRTIO_RING_SIZE_USIZE * core::mem::size_of::<Descriptor>()],
+    pub padding0: [u8; PAGE_SIZE
+        - 4
+        - core::mem::size_of::<AvailableRing>()
+        - VIRTIO_RING_SIZE_USIZE * core::mem::size_of::<Descriptor>()],
     pub used: UsedRing,
 }
 
-const_assert_eq!{(core::mem::size_of::<Queue>() - core::mem::size_of::<UsedRing>()), 4096}
+const_assert_eq! {(core::mem::size_of::<Queue>() - core::mem::size_of::<UsedRing>()), 4096}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum VirtIOError {
@@ -80,7 +83,7 @@ pub enum VirtIOError {
     CouldNotNegotiateFeatures(u32),
     DeviceRejectedFeatures(u32),
     InvalidMaximumQueueSize,
-    BadQueueSize
+    BadQueueSize,
 }
 
 #[repr(C)]
@@ -94,7 +97,7 @@ pub enum DeviceID {
     IOMemory = 6,
     SignalDistribution = 9,
     GPU = 16,
-    InputDevice=18,
+    InputDevice = 18,
 }
 
 impl core::default::Default for AvailableRing {
@@ -102,7 +105,7 @@ impl core::default::Default for AvailableRing {
         Self {
             flags: 0,
             idx: 0,
-            ring: [0; VIRTIO_RING_SIZE_USIZE]
+            ring: [0; VIRTIO_RING_SIZE_USIZE],
         }
     }
 }
@@ -113,7 +116,7 @@ impl core::default::Default for UsedRing {
             flags: 0,
             idx: 0,
             ring: [UsedElement::default(); VIRTIO_RING_SIZE_USIZE],
-            available_event: 0
+            available_event: 0,
         }
     }
 }
@@ -137,8 +140,11 @@ impl core::default::Default for Queue {
             available: AvailableRing::default(),
             index: 0,
             acknowledged_used_index: 0,
-            padding0: [0; PAGE_SIZE - 4 - core::mem::size_of::<AvailableRing>() - VIRTIO_RING_SIZE_USIZE * core::mem::size_of::<Descriptor>()],
-            used: UsedRing::default()
+            padding0: [0; PAGE_SIZE
+                - 4
+                - core::mem::size_of::<AvailableRing>()
+                - VIRTIO_RING_SIZE_USIZE * core::mem::size_of::<Descriptor>()],
+            used: UsedRing::default(),
         }
     }
 }

@@ -66,8 +66,6 @@ pub extern "C" fn kinit() {
 #[no_mangle]
 #[repr(align(4))]
 pub extern "C" fn kmain() {
-    use crate::qor_core::drivers::plic::PLICDriverInterface;
-
     let hart_id = qor_core::structures::id::HartID::from(0);
     info!("Starting supervisor mode");
 
@@ -76,20 +74,7 @@ pub extern "C" fn kmain() {
     memory::initialize_global_byte_allocator(byte_allocator_memory.convert());
 
     // Set up the PLIC
-    let plic = &crate::drivers::PLIC_DRIVER;
-    plic.initialize().expect("Unable to initialize PLIC");
-    plic.set_interrupt_priority(
-        drivers::UART_INTERRUPT,
-        qor_riscv::drivers::plic::InterruptPriority::Priority7,
-    )
-    .expect("Unable to set UART interrupt priority");
-    plic.set_hart_threshold(
-        hart_id,
-        qor_riscv::drivers::plic::InterruptPriority::Priority1,
-    )
-    .expect("Unable to set PLIC threshold");
-    plic.enable_interrupt_source(hart_id, drivers::UART_INTERRUPT)
-        .expect("Unable to enable UART interrupts");
+    crate::drivers::initialize_plic(hart_id);
     info!("PLIC Initialized");
 
     // Initialize the CLINT timer
@@ -99,25 +84,35 @@ pub extern "C" fn kmain() {
 
     for index in 0..8 {
         let address = 0x1000_8000 - (index * 0x1000);
-        let virt_io = unsafe { qor_riscv::drivers::virtio::probe_virt_io_address(address).expect("Bad Things Happened") };
+        let virt_io = unsafe {
+            qor_riscv::drivers::virtio::probe_virt_io_address(address).expect("Bad Things Happened")
+        };
         if let Ok(Some(device_id)) = virt_io.verify() {
             if device_id == DeviceID::BlockDevice {
                 info!("Initializing block device");
-                virt_io.start_setup(|v| Some(v & !(1 << 5))).expect("Setup Failed");
+                virt_io
+                    .start_setup(|v| Some(v & !(1 << 5)))
+                    .expect("Setup Failed");
                 info!("Block Device Initialization Started");
                 let mut block = drivers::virtio::block::VirtIOBlockDevice::new(virt_io);
-                block.initialize().expect("Unable to initialize block device");
+                block
+                    .initialize()
+                    .expect("Unable to initialize block device");
                 info!("Block Device Initialization Complete");
 
-                let mut buffer = [[0xffu8; 512]];
-                block.blocking_read(&mut buffer, 2).expect("Read Operation Failed");
+                for i in 0..1 {
+                    let mut buffer = [[0xffu8; 512]];
+                    block
+                        .blocking_read(&mut buffer, i)
+                        .expect("Read Operation Failed");
 
-                for v in buffer[0] {
-                    kprint!("{:02x} ", v);
+                    if i % 256 == 0 {
+                        block.clean_up();
+                    }
                 }
-
-                kprintln!();
             }
         }
     }
+
+    debug!("Done");
 }
