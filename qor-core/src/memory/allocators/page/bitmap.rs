@@ -32,6 +32,14 @@ pub struct PageBox<'a, Page: 'static, T> {
     page_count: usize,
 }
 
+impl<'a, Page: 'static, T> PageBox<'a, Page, T> {
+    /// Get the wrapped pointer as a pointer
+    #[must_use]
+    pub const fn as_ptr(&self) -> *mut T {
+        self.ptr.as_ptr()
+    }
+}
+
 impl<'a, Page: 'static, T> core::ops::Deref for PageBox<'a, Page, T> {
     type Target = T;
 

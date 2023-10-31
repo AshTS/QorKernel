@@ -1,3 +1,5 @@
 qor-core/target/*
 qor-os/target/*
 qor-riscv/target/*
+
+qor-os/hdd.dsk

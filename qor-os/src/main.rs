@@ -6,6 +6,8 @@
 #![no_main]
 #![warn(clippy::all, clippy::pedantic, clippy::nursery)]
 
+use qor_riscv::drivers::virtio::generic::structures::DeviceID;
+
 #[macro_use]
 extern crate qor_core;
 
@@ -92,6 +94,30 @@ pub extern "C" fn kmain() {
 
     // Initialize the CLINT timer
     crate::drivers::CLINT_DRIVER.set_frequency(qor_core::structures::time::Hertz(2));
-    crate::drivers::CLINT_DRIVER.start_timer(hart_id);
+    // crate::drivers::CLINT_DRIVER.start_timer(hart_id);
     info!("CLINT Initialized");
+
+    for index in 0..8 {
+        let address = 0x1000_8000 - (index * 0x1000);
+        let virt_io = unsafe { qor_riscv::drivers::virtio::probe_virt_io_address(address).expect("Bad Things Happened") };
+        if let Ok(Some(device_id)) = virt_io.verify() {
+            if device_id == DeviceID::BlockDevice {
+                info!("Initializing block device");
+                virt_io.start_setup(|v| Some(v & !(1 << 5))).expect("Setup Failed");
+                info!("Block Device Initialization Started");
+                let mut block = drivers::virtio::block::VirtIOBlockDevice::new(virt_io);
+                block.initialize().expect("Unable to initialize block device");
+                info!("Block Device Initialization Complete");
+
+                let mut buffer = [[0xffu8; 512]];
+                block.blocking_read(&mut buffer, 2).expect("Read Operation Failed");
+
+                for v in buffer[0] {
+                    kprint!("{:02x} ", v);
+                }
+
+                kprintln!();
+            }
+        }
+    }
 }

@@ -1,9 +1,11 @@
-use qor_core::interfaces::mmio::MMIOInterface;
-use super::{raw, structures::{DeviceID, VirtIOError}, bits};
+use qor_core::{interfaces::mmio::MMIOInterface, memory::allocators::page::bitmap::PageBox};
+use crate::memory::{PAGE_SIZE, PAGE_SIZE_U32, Page};
+
+use super::{raw, structures::{DeviceID, VirtIOError, Queue}, bits};
 
 /// Wrapper object for a Virt IO device
 pub struct VirtIOWrapper {
-    mmio_layer: MMIOInterface
+    pub mmio_layer: MMIOInterface
 }
 
 impl VirtIOWrapper {
@@ -125,6 +127,9 @@ impl VirtIOWrapper {
             return Err(VirtIOError::DeviceRejectedFeatures(negotiated_features));
         }
 
+        // Set the guest page size register
+        unsafe { raw::set_guest_page_size(&self.mmio_layer, PAGE_SIZE_U32) };
+
         Ok(())
     }
 
@@ -137,4 +142,56 @@ impl VirtIOWrapper {
         self.set_status_bits(bits::STATUS_BIT_DRIVER_OK)?;
         Ok(())
     }
-} 
+
+    /// Read the maximum queue size from the device
+    ///
+    /// # Errors
+    /// 
+    /// This function will return an error if the maximum queue size could not be read.
+    pub fn maximum_queue_size(&self) -> Result<u32, VirtIOError> {
+        // Safety: The only safe way to construct a `VirtIOWrapper` is by providing a proper base address.
+        let value = unsafe { raw::read_queue_num_max(&self.mmio_layer) };
+        if value == 0 {
+            Err(VirtIOError::InvalidMaximumQueueSize)
+        }
+        else {
+            Ok(value)
+        }
+    }
+
+    /// Write the queue size to the device
+    /// 
+    /// # Errors
+    /// 
+    /// This function will return an error if the queue size could not be written.
+    pub fn set_queue_size(&self, size: u32) -> Result<(), VirtIOError> {
+        // Safety: The only safe way to construct a `VirtIOWrapper` is by providing a proper base address.
+        unsafe { raw::set_queue_num(&self.mmio_layer, size) };
+        Ok(())
+    }
+
+    /// Add a queue to the device
+    ///
+    /// # Errors
+    /// 
+    /// This function will return an error if the queue could not be added.
+    pub fn add_queue(&self, index: u32, allocator: impl Fn() -> PageBox<'static, Page, Queue>) -> Result<PageBox<'static, Page, Queue>, VirtIOError> {
+        let boxed_queue = allocator();
+
+        let ptr = boxed_queue.as_ptr();
+        let pfn = (ptr as usize / PAGE_SIZE).try_into().expect("Pointer too wide");
+
+        // Safety: The only safe way to construct a `VirtIOWrapper` is by providing a proper base address.
+        unsafe { raw::set_queue_sel(&self.mmio_layer, index) };
+
+        // Safety: The only safe way to construct a `VirtIOWrapper` is by providing a proper base address.
+        unsafe { raw::set_queue_pfn(&self.mmio_layer, pfn) };
+
+        Ok(boxed_queue)
+    }
+
+    pub fn queue_notify(&self, index: u32) {
+        // Safety: The only safe way to construct a `VirtIOWrapper` is by providing a proper base address.
+        unsafe { raw::set_queue_notify(&self.mmio_layer, index) };
+    }
+}

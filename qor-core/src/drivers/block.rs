@@ -22,8 +22,18 @@ pub trait BlockDeviceDriver<
     fn initialize(&self) -> Result<(), Self::BlockDeviceError>;
 
     /// Read a block from the block device
-    fn read_block(&self, index: Self::BlockIndex, buffer: &mut [u8; BLOCK_SIZE]) -> ReadFuture;
+    fn read_block_range(&self, index: Self::BlockIndex, buffer: &mut [[u8; BLOCK_SIZE]]) -> ReadFuture;
 
     /// Write a block to the block device
-    fn write_block(&self, index: Self::BlockIndex, buffer: &[u8; BLOCK_SIZE]) -> WriteFuture;
+    fn write_block_range(&self, index: Self::BlockIndex, buffer: &[[u8; BLOCK_SIZE]]) -> WriteFuture;
+
+    /// Read a block from the block device
+    fn read_block(&self, index: Self::BlockIndex, buffer: &mut [u8; BLOCK_SIZE]) -> ReadFuture {
+        self.read_block_range(index, &mut [*buffer])
+    }
+
+    /// Write a block to the block device
+    fn write_block(&self, index: Self::BlockIndex, buffer: &[u8; BLOCK_SIZE]) -> WriteFuture {
+        self.write_block_range(index, &[*buffer])
+    }
 }

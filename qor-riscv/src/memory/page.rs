@@ -1,6 +1,7 @@
 use qor_core::memory::MemoryUnit;
 
-pub const PAGE_SIZE: usize = 4096;
+pub const PAGE_SIZE_U32: u32 = 4096;
+pub const PAGE_SIZE: usize = PAGE_SIZE_U32 as usize;
 
 #[repr(C)]
 #[repr(align(4096))]

@@ -4,6 +4,8 @@ use qor_riscv::drivers::{clint::HardwareTimer, plic::PLICDriver, uart::UARTDrive
 pub mod interrupts;
 pub use interrupts::*;
 
+pub mod virtio;
+
 // Safety: This is the base address given in the specification for the `virt` platform by QEMU (https://github.com/qemu/qemu/blob/master/hw/riscv/virt.c)
 pub static UART_DRIVER: UARTDriver = unsafe { UARTDriver::new(0x1000_0000) };
 
