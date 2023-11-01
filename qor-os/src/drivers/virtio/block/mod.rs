@@ -1,6 +1,8 @@
 #![allow(dead_code)]
 
-use alloc::boxed::Box;
+use core::marker::PhantomData;
+
+use alloc::{boxed::Box, sync::Arc};
 use qor_core::memory::allocators::page::bitmap::PageBox;
 
 use qor_riscv::{
@@ -14,6 +16,9 @@ use qor_riscv::{
 };
 
 use crate::memory::get_page_bitmap_allocator;
+
+pub mod futures;
+pub use futures::*;
 
 pub mod structures;
 pub use structures::*;
@@ -32,13 +37,35 @@ pub struct VirtIOBlockDevice {
     ack_used_index: u16,
 }
 
-fn alloc_request(request_type: u32, sector: u64, buffer: *mut u8, status: u8) -> Box<Request> {
+fn alloc_request<'a>(
+    request_type: u32,
+    sector: u64,
+    buffer: *mut u8,
+    status: u8,
+) -> Box<Request<'a>> {
     Box::new(Request {
         request_type,
         reserved: 0,
         sector,
         data: buffer,
         status: core::sync::atomic::AtomicU8::new(status),
+        _marker: PhantomData,
+    })
+}
+
+fn arc_alloc_request<'a>(
+    request_type: u32,
+    sector: u64,
+    buffer: *mut u8,
+    status: u8,
+) -> Arc<Request<'a>> {
+    Arc::new(Request {
+        request_type,
+        reserved: 0,
+        sector,
+        data: buffer,
+        status: core::sync::atomic::AtomicU8::new(status),
+        _marker: PhantomData,
     })
 }
 
@@ -84,12 +111,12 @@ impl VirtIOBlockDevice {
     }
 
     /// Begin executing a block operation.
-    fn execute_request<'a>(
-        &mut self,
-        request: &'a Request,
+    fn execute_request<'b, 'a: 'b>(
+        &'b mut self,
+        request: &'b Request<'a>,
         length: u32,
         write: bool,
-    ) -> &'a core::sync::atomic::AtomicU8 {
+    ) -> &'b core::sync::atomic::AtomicU8 {
         let queue = self.queue.as_mut().expect("Queue not initialized");
 
         let descriptor = Descriptor {
@@ -163,6 +190,32 @@ impl VirtIOBlockDevice {
         }
     }
 
+    unsafe fn non_blocking_block_operation<'b, 'a: 'b>(
+        &'b mut self,
+        buffer: *mut u8,
+        buffer_length: usize,
+        block_index: usize,
+        write: bool,
+        _phantom: PhantomData<&'a u8>,
+    ) -> BlockOperationFuture<'a> {
+        let truncated_buffer_length =
+            u32::try_from(buffer_length).expect("Length exceeds maximum buffer size");
+
+        let request = arc_alloc_request(
+            if write {
+                VIRTIO_BLK_T_OUT
+            } else {
+                VIRTIO_BLK_T_IN
+            },
+            block_index as u64,
+            buffer,
+            111,
+        );
+        self.execute_request(&request, truncated_buffer_length, write);
+
+        BlockOperationFuture::new(111, request)
+    }
+
     /// Execute a blocking read operation.
     ///
     /// # Errors
@@ -179,6 +232,23 @@ impl VirtIOBlockDevice {
             block_index,
             false,
         )
+    }
+
+    /// Execute a non-blocking read operation.
+    pub fn non_blocking_read<'b, 'a: 'b>(
+        &'b mut self,
+        buffer: &'a mut [[u8; 512]],
+        block_index: usize,
+    ) -> BlockOperationFuture {
+        unsafe {
+            self.non_blocking_block_operation(
+                buffer.as_mut_ptr().cast(),
+                buffer.len() * 512,
+                block_index,
+                false,
+                PhantomData::<&'a u8>,
+            )
+        }
     }
 
     /// Execute a blocking write operation.
@@ -198,6 +268,28 @@ impl VirtIOBlockDevice {
             block_index,
             true,
         )
+    }
+
+    /// Execute a non-blocking write operation.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the operation failed.
+    pub fn non_blocking_write<'a, 'b>(
+        &'b mut self,
+        buffer: &'a [[u8; 512]],
+        block_index: usize,
+    ) -> BlockOperationFuture<'a> {
+        #[allow(clippy::as_ptr_cast_mut)]
+        unsafe {
+            self.non_blocking_block_operation(
+                buffer.as_ptr() as *mut u8,
+                buffer.len() * 512,
+                block_index,
+                true,
+                PhantomData::<&'a u8>,
+            )
+        }
     }
 
     /// Clean up after the used ring, note that we don't actually free anything here, as individual requests are

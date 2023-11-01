@@ -1,5 +1,7 @@
 #![allow(dead_code)]
 
+use core::marker::PhantomData;
+
 pub const VIRTIO_F_RING_INDIRECT_DESC: u32 = 28;
 pub const VIRTIO_F_RING_EVENT_IDX: u32 = 29;
 pub const VIRTIO_F_VERSION_1: u32 = 32;
@@ -38,10 +40,13 @@ pub const VIRTIO_BLK_F_WRITE_ZEROES: u32 = 14;
 
 #[repr(C)]
 #[derive(Debug)]
-pub struct Request {
+pub struct Request<'a> {
     pub request_type: u32,
     pub reserved: u32,
     pub sector: u64,
     pub data: *mut u8,
     pub status: core::sync::atomic::AtomicU8,
+    pub _marker: PhantomData<&'a u8>,
 }
+
+unsafe impl<'a> core::marker::Send for Request<'a> {}
