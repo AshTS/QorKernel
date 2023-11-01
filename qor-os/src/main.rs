@@ -6,8 +6,6 @@
 #![no_main]
 #![warn(clippy::all, clippy::pedantic, clippy::nursery)]
 
-use qor_riscv::drivers::virtio::generic::structures::DeviceID;
-
 #[macro_use]
 extern crate qor_core;
 
@@ -82,43 +80,17 @@ pub extern "C" fn kmain() {
     // crate::drivers::CLINT_DRIVER.start_timer(hart_id);
     info!("CLINT Initialized");
 
-    for index in 0..8 {
-        let address = 0x1000_8000 - (index * 0x1000);
-        let virt_io = unsafe {
-            qor_riscv::drivers::virtio::probe_virt_io_address(address).expect("Bad Things Happened")
-        };
-        if let Ok(Some(device_id)) = virt_io.verify() {
-            if device_id == DeviceID::BlockDevice {
-                info!("Initializing block device");
-                virt_io
-                    .start_setup(|v| Some(v & !(1 << 5)))
-                    .expect("Setup Failed");
-                info!("Block Device Initialization Started");
-                let mut block = drivers::virtio::block::VirtIOBlockDevice::new(virt_io);
-                block
-                    .initialize()
-                    .expect("Unable to initialize block device");
-                info!("Block Device Initialization Complete");
+    // Probe the virt io address range
+    info!("Starting VirtIO Device Discovery");
+    crate::drivers::virtio::probe_virt_io_address_range();
+    info!("VirtIO Device Discovery Complete");
 
-                let block = alloc::boxed::Box::new(
-                    drivers::virtio::block::interface::BlockDriver::new(block),
-                );
-
-                qor_core::tasks::execute_task(qor_core::tasks::Task::new(future(
-                    alloc::boxed::Box::leak(block),
-                )));
-            }
-        }
-    }
-
-    debug!("Done");
+    qor_core::tasks::execute_task(qor_core::tasks::Task::new(future()));
 }
 
-pub async fn future<E: core::fmt::Debug + Send + Sync>(
-    block_device: &(dyn qor_core::drivers::block::BlockDeviceDriver<512, E, u32> + Send + Sync),
-) {
+pub async fn future() {
     let mut buffer = alloc::boxed::Box::new([[0xffu8; 512]]);
-    let result = block_device.read_blocks(2, &mut *buffer);
+    let result = drivers::get_block_driver().read_blocks(2, &mut *buffer);
     result.await.expect("Oops :(");
     core::mem::drop(buffer);
     kprint!("Read Complete\n");
