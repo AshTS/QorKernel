@@ -101,10 +101,8 @@ pub extern "C" fn kmain() {
                     .expect("Unable to initialize block device");
                 info!("Block Device Initialization Complete");
 
-                let block = alloc::boxed::Box::new(block);
-
                 qor_core::tasks::execute_task(qor_core::tasks::Task::new(future(
-                    alloc::boxed::Box::leak(block),
+                    qor_core::sync::Mutex::new(block),
                 )));
             }
         }
@@ -113,9 +111,10 @@ pub extern "C" fn kmain() {
     debug!("Done");
 }
 
-pub async fn future(block_device: &mut VirtIOBlockDevice) {
+pub async fn future(block_device: qor_core::sync::Mutex<VirtIOBlockDevice>) {
     let mut buffer = alloc::boxed::Box::new([[0xffu8; 512]]);
-    let result = block_device.non_blocking_read(&mut *buffer, 2);
+    let mut guard = block_device.async_lock().await;
+    let result = guard.non_blocking_read(&mut *buffer, 2);
 
     result.await.expect("Oops :(");
     core::mem::drop(buffer);

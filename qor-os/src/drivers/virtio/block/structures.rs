@@ -50,3 +50,4 @@ pub struct Request<'a> {
 }
 
 unsafe impl<'a> core::marker::Send for Request<'a> {}
+unsafe impl<'a> core::marker::Sync for Request<'a> {}

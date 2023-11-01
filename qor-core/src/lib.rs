@@ -20,6 +20,7 @@ pub mod logging;
 
 pub mod memory;
 pub mod structures;
+pub mod sync;
 #[cfg(feature = "alloc")]
 pub mod tasks;
 pub mod utils;
