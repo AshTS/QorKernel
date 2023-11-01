@@ -6,7 +6,6 @@
 #![no_main]
 #![warn(clippy::all, clippy::pedantic, clippy::nursery)]
 
-use drivers::virtio::block::VirtIOBlockDevice;
 use qor_riscv::drivers::virtio::generic::structures::DeviceID;
 
 #[macro_use]
@@ -101,8 +100,12 @@ pub extern "C" fn kmain() {
                     .expect("Unable to initialize block device");
                 info!("Block Device Initialization Complete");
 
+                let block = alloc::boxed::Box::new(
+                    drivers::virtio::block::interface::BlockDriver::new(block),
+                );
+
                 qor_core::tasks::execute_task(qor_core::tasks::Task::new(future(
-                    qor_core::sync::Mutex::new(block),
+                    alloc::boxed::Box::leak(block),
                 )));
             }
         }
@@ -111,11 +114,11 @@ pub extern "C" fn kmain() {
     debug!("Done");
 }
 
-pub async fn future(block_device: qor_core::sync::Mutex<VirtIOBlockDevice>) {
+pub async fn future<E: core::fmt::Debug + Send + Sync>(
+    block_device: &(dyn qor_core::drivers::block::BlockDeviceDriver<512, E, u32> + Send + Sync),
+) {
     let mut buffer = alloc::boxed::Box::new([[0xffu8; 512]]);
-    let mut guard = block_device.async_lock().await;
-    let result = guard.non_blocking_read(&mut *buffer, 2);
-
+    let result = block_device.read_blocks(2, &mut *buffer);
     result.await.expect("Oops :(");
     core::mem::drop(buffer);
     kprint!("Read Complete\n");

@@ -1,16 +1,16 @@
+use alloc::boxed::Box;
+
 /// # Block Device Driver Interface
 ///
 /// Exposes the common functionality for all Block Device Drivers
 #[allow(clippy::module_name_repetitions)]
+#[async_trait::async_trait]
 pub trait BlockDeviceDriver<
     const BLOCK_SIZE: usize,
-    ReadFuture: core::future::Future<Output = Result<(), Self::BlockDeviceError>>,
-    WriteFuture: core::future::Future<Output = Result<(), Self::BlockDeviceError>>,
+    BlockDeviceError: core::fmt::Debug + Send + Sync,
+    BlockIndex: Copy + Send + Sync,
 >
 {
-    type BlockDeviceError;
-    type BlockIndex;
-
     /// Return true if the Block Device Driver is initialized.
     fn is_initialized(&self) -> bool;
 
@@ -19,29 +19,19 @@ pub trait BlockDeviceDriver<
     /// # Errors
     ///
     /// Returns an error if initialization failed.
-    fn initialize(&self) -> Result<(), Self::BlockDeviceError>;
+    fn initialize(&self) -> Result<(), BlockDeviceError>;
 
     /// Read a block from the block device
-    fn read_block_range(
-        &self,
-        index: Self::BlockIndex,
-        buffer: &mut [[u8; BLOCK_SIZE]],
-    ) -> ReadFuture;
+    async fn read_blocks<'b, 'a: 'b>(
+        &'b self,
+        index: BlockIndex,
+        buffer: &'a mut [[u8; BLOCK_SIZE]],
+    ) -> Result<(), BlockDeviceError>;
 
     /// Write a block to the block device
-    fn write_block_range(
-        &self,
-        index: Self::BlockIndex,
-        buffer: &[[u8; BLOCK_SIZE]],
-    ) -> WriteFuture;
-
-    /// Read a block from the block device
-    fn read_block(&self, index: Self::BlockIndex, buffer: &mut [u8; BLOCK_SIZE]) -> ReadFuture {
-        self.read_block_range(index, &mut [*buffer])
-    }
-
-    /// Write a block to the block device
-    fn write_block(&self, index: Self::BlockIndex, buffer: &[u8; BLOCK_SIZE]) -> WriteFuture {
-        self.write_block_range(index, &[*buffer])
-    }
+    async fn write_blocks<'b, 'a: 'b>(
+        &'b self,
+        index: BlockIndex,
+        buffer: &'a [[u8; BLOCK_SIZE]],
+    ) -> Result<(), BlockDeviceError>;
 }

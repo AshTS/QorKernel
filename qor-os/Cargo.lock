@@ -3,6 +3,17 @@
 version = 3
 
 [[package]]
+name = "async-trait"
+version = "0.1.74"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a66537f1bb974b254c98ed142ff995236e81b9d0fe4db0575f46612cb15eb0f9"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "atomic"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -99,6 +110,7 @@ dependencies = [
 name = "qor-core"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "atomic",
  "atomic_ref",
  "const_format",
@@ -108,6 +120,7 @@ dependencies = [
 name = "qor-os"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "atomic_ref",
  "const_format",
  "qor-core",
@@ -150,6 +163,17 @@ name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
+
+[[package]]
+name = "syn"
+version = "2.0.32"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "239814284fd6f1a4ffe4ca893952cdd93c224b6a1571c9a9eadd670295c0c9e2"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "unicode-ident",
+]
 
 [[package]]
 name = "unicode-ident"

@@ -11,6 +11,7 @@ alloc=[]
 default=["std", "alloc"]
 
 [dependencies]
+async-trait = "0.1.74"
 atomic = "0.6.0"
 atomic_ref = "0.2.1"
 const_format = "0.2.31"
