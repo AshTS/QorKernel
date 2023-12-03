@@ -12,13 +12,41 @@ impl core::convert::From<usize> for HartID {
 /// Process Identifier
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct PID(pub u16);
+pub struct ProcessID(pub u16);
 
-impl core::convert::From<u16> for PID {
+impl core::convert::From<u16> for ProcessID {
     fn from(value: u16) -> Self {
         Self(value)
     }
 }
+
+pub type PID = ProcessID;
+
+/// User Identifier
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct UserID(pub u16);
+
+impl core::convert::From<u16> for UserID {
+    fn from(value: u16) -> Self {
+        Self(value)
+    }
+}
+
+pub type UID = UserID;
+
+/// Group Identifier
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct GroupID(pub u16);
+
+impl core::convert::From<u16> for GroupID {
+    fn from(value: u16) -> Self {
+        Self(value)
+    }
+}
+
+pub type GID = GroupID;
 
 /// File Descriptor
 #[repr(C)]

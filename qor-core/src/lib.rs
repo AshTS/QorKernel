@@ -13,6 +13,7 @@ extern crate std;
 extern crate alloc;
 
 pub mod drivers;
+pub mod fs;
 pub mod interfaces;
 
 #[macro_use]

@@ -2,7 +2,10 @@
 
 use core::sync::atomic::AtomicU16;
 
-use qor_core::{memory::allocators::page::bitmap::PageBox, structures::id::PID};
+use qor_core::{
+    memory::allocators::page::bitmap::PageBox,
+    structures::id::{ProcessID, PID},
+};
 use qor_riscv::{
     memory::{mmu::entry::GlobalUserFlags, Page, PageCount},
     trap::frame::TrapFrame,
@@ -17,7 +20,7 @@ static PID_COUNTER: AtomicU16 = AtomicU16::new(1);
 
 /// Get the next PID to be used
 fn new_pid() -> PID {
-    PID(PID_COUNTER.fetch_add(1, core::sync::atomic::Ordering::Relaxed))
+    ProcessID(PID_COUNTER.fetch_add(1, core::sync::atomic::Ordering::Relaxed))
 }
 
 /// Execution state for process execution. Includes a trap frame (which doesn't store the information for executing

@@ -10,8 +10,10 @@ edition = "2021"
 debug = true
 
 [dependencies]
+async-recursion = "1.0.5"
 async-trait = "0.1.74"
 atomic_ref = "0.2.1"
 const_format = "0.2.31"
 qor-core = {default-features = false, path="../qor-core", features=["alloc"]}
 qor-riscv = {path="../qor-riscv"}
+spin = "0.9.8"

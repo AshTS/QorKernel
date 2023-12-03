@@ -6,6 +6,8 @@
 #![no_main]
 #![warn(clippy::all, clippy::pedantic, clippy::nursery)]
 
+use crate::fs::global_fs;
+
 #[macro_use]
 extern crate qor_core;
 
@@ -13,6 +15,7 @@ extern crate alloc;
 
 mod asm;
 mod drivers;
+mod fs;
 mod kprint;
 mod memory;
 mod panic;
@@ -68,8 +71,11 @@ pub extern "C" fn kmain() {
     info!("Starting supervisor mode");
 
     // Initialize the byte grained allocator
-    let byte_allocator_memory = qor_core::memory::KiByteCount::new(16);
+    let byte_allocator_memory = qor_core::memory::KiByteCount::new(1024);
     memory::initialize_global_byte_allocator(byte_allocator_memory.convert());
+
+    // Initialize the file system
+    fs::initialize_file_system();
 
     // Set up the PLIC
     crate::drivers::initialize_plic(hart_id);
@@ -85,13 +91,44 @@ pub extern "C" fn kmain() {
     crate::drivers::virtio::probe_virt_io_address_range();
     info!("VirtIO Device Discovery Complete");
 
-    qor_core::tasks::execute_task(qor_core::tasks::Task::new(future()));
+    qor_core::tasks::execute_task(qor_core::tasks::Task::new(mount_default_fs()));
+    qor_core::tasks::execute_task(qor_core::tasks::Task::new(map_fs("", None)));
 }
 
-pub async fn future() {
-    let mut buffer = alloc::boxed::Box::new([[0xffu8; 512]]);
-    let result = drivers::get_block_driver().read_blocks(2, &mut *buffer);
-    result.await.expect("Oops :(");
-    core::mem::drop(buffer);
-    kprint!("Read Complete\n");
+/// Mount the filesystem on the main block device
+pub async fn mount_default_fs() {
+    let block_driver = drivers::get_block_driver();
+    let file_sys = qor_core::fs::ext2::Ext2FileSystem::new(block_driver.as_ref());
+
+    let fs = global_fs();
+    let root_inode_result = fs.read().root_inode().await;
+    root_inode_result.map_or_else(|_| {
+        error!("Unable to mount root file system");
+    }, |root_inode| {
+        // Make this device permanently resident in memory.
+        fs::mount_fs(root_inode, alloc::sync::Arc::new(file_sys));
+    });
+}
+
+use alloc::boxed::Box;
+/// List all files on the mounted file system
+/// 
+/// # Panics
+/// 
+/// This function will panic if any of the file system accesses fail
+#[async_recursion::async_recursion]
+pub async fn map_fs(addr: &str, inode: Option<qor_core::interfaces::fs::INodeReference>) {
+    let fs = global_fs();
+    let fs_r = fs.read();
+
+    let root_inode = inode.unwrap_or(fs_r.root_inode().await.unwrap());
+
+    let entries = fs_r.directory_entries(root_inode).await.unwrap();
+    for entry in entries {
+        debug!("Entry: {}/{} -> {:?}", addr, entry.name, entry.inode);
+        if !entry.name.starts_with('.') && fs_r.inode_data(entry.inode).await.unwrap().is_directory() {
+            let path = alloc::format!("{}/{}", addr, entry.name);
+            map_fs(&path, Some(entry.inode)).await;
+        }
+    }
 }
