@@ -102,6 +102,14 @@ impl FileSystem for EmptyFileSystem {
             _ => Err(FileSystemError::BadInode(inode)),
         }
     }
+    
+    async fn read_to_data(&self, inode: INodeReference) -> Result<Vec<u8>, FileSystemError> {
+        self.verify_ref(inode)?;
+        match inode.inode {
+            0 => Ok(alloc::vec::Vec::new()),
+            _ => Err(FileSystemError::BadInode(inode)),
+        }
+    }
 }
 
 impl MountableFileSystem for EmptyFileSystem {

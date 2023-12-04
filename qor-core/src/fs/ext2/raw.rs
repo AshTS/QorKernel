@@ -349,6 +349,16 @@ impl SuperBlock {
             1
         }
     }
+
+    #[must_use]
+    pub const fn use_64_bit_sizes(&self) -> bool {
+        if let Some(extended) = self.extended {
+            extended.read_only_features & 2 > 0
+        }
+        else {
+            false
+        }
+    }
 }
 
 /// Minix3 Inode

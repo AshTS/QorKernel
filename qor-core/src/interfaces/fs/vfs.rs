@@ -134,6 +134,32 @@ impl FileSystem for VirtualFileSystem {
             unreachable!()
         }
     }
+    
+    async fn read_to_data(&self, inode: INodeReference) -> Result<Vec<u8>, FileSystemError> {
+        if let Some(mounted_fs) = self.mounted_filesystems.get(&inode) {
+            let mounted_root = self
+                .devices
+                .get(*mounted_fs)
+                .ok_or(FileSystemError::BadInodeWrongDevice(inode))?
+                .root_inode()
+                .await?;
+            self.devices
+                .get(*mounted_fs)
+                .ok_or(FileSystemError::BadInodeWrongDevice(inode))?
+                .read_to_data(mounted_root)
+                .await
+        } else if inode.device >= 1 {
+            self.devices
+                .get(inode.device - 1)
+                .ok_or(FileSystemError::BadInodeWrongDevice(inode))?
+                .read_to_data(inode)
+                .await
+        } else if inode.device == 0 {
+            Err(FileSystemError::BadInodeWrongDevice(inode))
+        } else {
+            unreachable!()
+        }
+    }
 }
 
 impl MountingFilesystem for VirtualFileSystem {

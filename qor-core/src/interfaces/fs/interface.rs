@@ -12,6 +12,7 @@ pub trait FileSystem {
     ) -> Result<Vec<DirectoryEntry<'_>>, FileSystemError>;
     async fn open(&self, inode: INodeReference)
         -> Result<Box<dyn FileDescriptor>, FileSystemError>;
+    async fn read_to_data(&self, inode: INodeReference) -> Result<Vec<u8>, FileSystemError>;
 }
 
 pub trait MountableFileSystem: FileSystem {
