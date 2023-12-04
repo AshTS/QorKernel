@@ -134,7 +134,7 @@ impl FileSystem for VirtualFileSystem {
             unreachable!()
         }
     }
-    
+
     async fn read_to_data(&self, inode: INodeReference) -> Result<Vec<u8>, FileSystemError> {
         if let Some(mounted_fs) = self.mounted_filesystems.get(&inode) {
             let mounted_root = self

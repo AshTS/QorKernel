@@ -3,16 +3,14 @@ const fn div_ceil(a: usize, b: usize) -> usize {
 }
 
 pub struct Parser<'a> {
-    data: &'a [u8]
+    data: &'a [u8],
 }
 
 impl<'a> Parser<'a> {
     /// Construct a new parser for a slice of `u8`'s
     #[must_use]
     pub const fn new(data: &'a [u8]) -> Self {
-        Self {
-            data
-        }
+        Self { data }
     }
 
     /// Take a `u8` from the slice.
@@ -20,8 +18,7 @@ impl<'a> Parser<'a> {
     pub fn take_u8(&mut self) -> Option<u8> {
         if self.data.is_empty() {
             None
-        }
-        else {
+        } else {
             let result = self.data[0];
             self.data = &self.data[1..];
 
@@ -30,9 +27,9 @@ impl<'a> Parser<'a> {
     }
 
     /// Take a `u16` from the slice.
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// This function will panic if the slice is of the wrong size.
     #[must_use]
     pub fn take_u16(&mut self) -> Option<u16> {
@@ -41,16 +38,15 @@ impl<'a> Parser<'a> {
             self.data = &self.data[2..];
 
             Some(result)
-        }
-        else {
+        } else {
             None
         }
     }
 
     /// Take a `u32` from the slice.
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// This function will panic if the slice is of the wrong size.
     #[must_use]
     pub fn take_u32(&mut self) -> Option<u32> {
@@ -59,16 +55,15 @@ impl<'a> Parser<'a> {
             self.data = &self.data[4..];
 
             Some(result)
-        }
-        else {
+        } else {
             None
         }
     }
 
     /// Take a `u64` from the slice.
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// This function will panic if the slice is of the wrong size.
     #[must_use]
     pub fn take_u64(&mut self) -> Option<u64> {
@@ -77,16 +72,15 @@ impl<'a> Parser<'a> {
             self.data = &self.data[8..];
 
             Some(result)
-        }
-        else {
+        } else {
             None
         }
     }
 
     /// Take a `u128` from the slice.
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// This function will panic if the slice is of the wrong size.
     #[must_use]
     pub fn take_u128(&mut self) -> Option<u128> {
@@ -95,16 +89,15 @@ impl<'a> Parser<'a> {
             self.data = &self.data[16..];
 
             Some(result)
-        }
-        else {
+        } else {
             None
         }
     }
 
     /// Take an array of `u8`'s of a given length.
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// This function will panic if the slice is of the wrong size.
     pub fn take_u8_array<const L: usize>(&mut self) -> Option<[u8; L]> {
         if self.data.len() >= L {
@@ -112,16 +105,15 @@ impl<'a> Parser<'a> {
             self.data = &self.data[L..];
 
             Some(result)
-        }
-        else {
+        } else {
             None
         }
     }
 
     /// Take an array of `u32`'s of a given length.
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// This function will panic if the slice is of the wrong size.
     pub fn take_u32_array<const L: usize>(&mut self) -> Option<[u32; L]> {
         if self.data.len() >= L {
@@ -131,8 +123,7 @@ impl<'a> Parser<'a> {
             }
 
             Some(result)
-        }
-        else {
+        } else {
             None
         }
     }
@@ -143,8 +134,7 @@ impl<'a> Parser<'a> {
             self.data = &self.data[length..];
 
             Some(())
-        }
-        else {
+        } else {
             None
         }
     }
@@ -181,7 +171,7 @@ pub struct ExtendedSuperblock {
     pub journal_id: u128,
     pub journal_inode: u32,
     pub journal_device: u32,
-    pub orphan_inode_list_head: u32
+    pub orphan_inode_list_head: u32,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -212,7 +202,7 @@ pub struct SuperBlock {
     pub user_id_for_reserved: u16,
     pub group_id_for_reserved: u16,
 
-    pub extended: Option<ExtendedSuperblock>
+    pub extended: Option<ExtendedSuperblock>,
 }
 
 impl SuperBlock {
@@ -250,7 +240,7 @@ impl SuperBlock {
         let major_version = parser.take_u32().unwrap();
         let user_id_for_reserved = parser.take_u16().unwrap();
         let group_id_for_reserved = parser.take_u16().unwrap();
-        
+
         let extended = if major_version >= 1 {
             let first_unreserved_inode = parser.take_u32().unwrap();
             let inode_structure_size = parser.take_u16().unwrap();
@@ -268,7 +258,7 @@ impl SuperBlock {
             let journal_inode = parser.take_u32().unwrap();
             let journal_device = parser.take_u32().unwrap();
             let orphan_inode_list_head = parser.take_u32().unwrap();
-            
+
             Some(ExtendedSuperblock {
                 first_unreserved_inode,
                 inode_structure_size,
@@ -285,10 +275,9 @@ impl SuperBlock {
                 journal_id,
                 journal_inode,
                 journal_device,
-                orphan_inode_list_head
+                orphan_inode_list_head,
             })
-        }
-        else {
+        } else {
             None
         };
 
@@ -318,7 +307,7 @@ impl SuperBlock {
             major_version,
             user_id_for_reserved,
             group_id_for_reserved,
-            extended
+            extended,
         }
     }
 
@@ -329,13 +318,18 @@ impl SuperBlock {
 
     #[must_use]
     pub const fn block_group_count(&self) -> usize {
-        let block_group_count_by_block = div_ceil(self.block_count as usize, self.blocks_per_block_group as usize);
-        let block_group_count_by_inode = div_ceil(self.inode_count as usize, self.inodes_per_block_group as usize);
+        let block_group_count_by_block = div_ceil(
+            self.block_count as usize,
+            self.blocks_per_block_group as usize,
+        );
+        let block_group_count_by_inode = div_ceil(
+            self.inode_count as usize,
+            self.inodes_per_block_group as usize,
+        );
 
         if block_group_count_by_block >= block_group_count_by_inode {
             block_group_count_by_block
-        }
-        else {
+        } else {
             block_group_count_by_inode
         }
     }
@@ -344,8 +338,7 @@ impl SuperBlock {
     pub const fn block_group_descriptor_table_index(&self) -> usize {
         if self.block_size_log_2_less_10 == 0 {
             2
-        }
-        else {
+        } else {
             1
         }
     }
@@ -354,8 +347,7 @@ impl SuperBlock {
     pub const fn use_64_bit_sizes(&self) -> bool {
         if let Some(extended) = self.extended {
             extended.read_only_features & 2 > 0
-        }
-        else {
+        } else {
             false
         }
     }
@@ -364,9 +356,8 @@ impl SuperBlock {
 /// Minix3 Inode
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Default)]
-pub struct Inode
-{
-	pub mode: u16,
+pub struct Inode {
+    pub mode: u16,
     pub user_id: u16,
     pub lower_32_size: u32,
     pub last_access_time: u32,
@@ -383,7 +374,7 @@ pub struct Inode
     pub extended_attribute_block: u32,
     pub upper_32_size: u32,
     pub fragment_block_address: u32,
-    pub os_specific_2: [u8; 12]
+    pub os_specific_2: [u8; 12],
 }
 
 impl Inode {
@@ -441,8 +432,7 @@ impl Inode {
     pub const fn size(&self, use_extended: bool) -> usize {
         if use_extended {
             (self.lower_32_size as usize) | ((self.upper_32_size as usize) << 32)
-        }
-        else {
+        } else {
             self.lower_32_size as usize
         }
     }
@@ -455,7 +445,7 @@ pub struct BlockGroupDescriptor {
     pub starting_block_inode_table: u32,
     pub remaining_unallocated_blocks: u16,
     pub remaining_unallocated_inodes: u16,
-    pub directories_in_group: u16
+    pub directories_in_group: u16,
 }
 
 impl BlockGroupDescriptor {
@@ -481,14 +471,14 @@ impl BlockGroupDescriptor {
             starting_block_inode_table,
             remaining_unallocated_blocks,
             remaining_unallocated_inodes,
-            directories_in_group
+            directories_in_group,
         }
     }
 }
 
 pub struct DirectoryEntry {
     pub inode: u32,
-    pub name: alloc::vec::Vec<u8>
+    pub name: alloc::vec::Vec<u8>,
 }
 
 impl DirectoryEntry {
@@ -507,12 +497,11 @@ impl DirectoryEntry {
             let total_size = parser.take_u16().unwrap();
             let _ = parser.take_u8(); // Skip name length
             let _ = parser.take_u8(); // Skip type indicator
-            let name = (&mut parser).take(total_size as usize - 8).collect::<alloc::vec::Vec<_>>();
+            let name = (&mut parser)
+                .take(total_size as usize - 8)
+                .collect::<alloc::vec::Vec<_>>();
 
-            result.push(Self {
-                inode,
-                name
-            });
+            result.push(Self { inode, name });
         }
 
         result

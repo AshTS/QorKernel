@@ -102,19 +102,22 @@ pub async fn mount_default_fs() {
 
     let fs = global_fs();
     let root_inode_result = fs.read().root_inode().await;
-    root_inode_result.map_or_else(|_| {
-        error!("Unable to mount root file system");
-    }, |root_inode| {
-        // Make this device permanently resident in memory.
-        fs::mount_fs(root_inode, alloc::sync::Arc::new(file_sys));
-    });
+    root_inode_result.map_or_else(
+        |_| {
+            error!("Unable to mount root file system");
+        },
+        |root_inode| {
+            // Make this device permanently resident in memory.
+            fs::mount_fs(root_inode, alloc::sync::Arc::new(file_sys));
+        },
+    );
 }
 
 use alloc::boxed::Box;
 /// List all files on the mounted file system
-/// 
+///
 /// # Panics
-/// 
+///
 /// This function will panic if any of the file system accesses fail
 #[async_recursion::async_recursion]
 pub async fn map_fs(addr: &str, inode: Option<qor_core::interfaces::fs::INodeReference>) {
@@ -126,7 +129,9 @@ pub async fn map_fs(addr: &str, inode: Option<qor_core::interfaces::fs::INodeRef
     let entries = fs_r.directory_entries(root_inode).await.unwrap();
     for entry in entries {
         debug!("Entry: {}/{} -> {:?}", addr, entry.name, entry.inode);
-        if !entry.name.starts_with('.') && fs_r.inode_data(entry.inode).await.unwrap().is_directory() {
+        if !entry.name.starts_with('.')
+            && fs_r.inode_data(entry.inode).await.unwrap().is_directory()
+        {
             let path = alloc::format!("{}/{}", addr, entry.name);
             map_fs(&path, Some(entry.inode)).await;
         }
