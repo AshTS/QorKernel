@@ -7,4 +7,6 @@ pub enum FileSystemError {
     BadInodeWrongDevice(INodeReference),
     NoMountedFilesystem,
     CorruptedFilesystem,
+    PathNotFound,
+    NotDirectory
 }

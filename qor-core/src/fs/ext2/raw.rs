@@ -497,9 +497,10 @@ impl DirectoryEntry {
             let total_size = parser.take_u16().unwrap();
             let _ = parser.take_u8(); // Skip name length
             let _ = parser.take_u8(); // Skip type indicator
-            let name = (&mut parser)
-                .take(total_size as usize - 8)
-                .collect::<alloc::vec::Vec<_>>();
+            let mut name: alloc::vec::Vec<u8> = (&mut parser).take(total_size as usize - 8).collect();
+            while name.last() == Some(&0) {
+                name.pop();
+            } 
 
             result.push(Self { inode, name });
         }

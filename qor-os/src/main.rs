@@ -92,7 +92,7 @@ pub extern "C" fn kmain() {
     info!("VirtIO Device Discovery Complete");
 
     qor_core::tasks::execute_task(qor_core::tasks::Task::new(mount_default_fs()));
-    qor_core::tasks::execute_task(qor_core::tasks::Task::new(map_fs("", None)));
+    qor_core::tasks::execute_task(qor_core::tasks::Task::new(map_fs()));
 }
 
 /// Mount the filesystem on the main block device
@@ -113,27 +113,15 @@ pub async fn mount_default_fs() {
     );
 }
 
-use alloc::boxed::Box;
 /// List all files on the mounted file system
 ///
 /// # Panics
 ///
 /// This function will panic if any of the file system accesses fail
-#[async_recursion::async_recursion]
-pub async fn map_fs(addr: &str, inode: Option<qor_core::interfaces::fs::INodeReference>) {
+pub async fn map_fs() {
     let fs = global_fs();
     let fs_r = fs.read();
 
-    let root_inode = inode.unwrap_or(fs_r.root_inode().await.unwrap());
-
-    let entries = fs_r.directory_entries(root_inode).await.unwrap();
-    for entry in entries {
-        debug!("Entry: {}/{} -> {:?}", addr, entry.name, entry.inode);
-        if !entry.name.starts_with('.')
-            && fs_r.inode_data(entry.inode).await.unwrap().is_directory()
-        {
-            let path = alloc::format!("{}/{}", addr, entry.name);
-            map_fs(&path, Some(entry.inode)).await;
-        }
-    }
+    let inode = fs_r.root_inode().await.unwrap();
+    fs_r.walk_children(inode).await.unwrap();
 }
