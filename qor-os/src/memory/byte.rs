@@ -79,7 +79,10 @@ unsafe impl GlobalAlloc for GlobalByteAllocatorWrapper {
             trace!("ALLOC {:?} {:?}", ptr, layout);
         }
 
-        assert!(ptr as usize % layout.align() == 0, "Alignment not satisfied");
+        assert!(
+            ptr as usize % layout.align() == 0,
+            "Alignment not satisfied"
+        );
 
         ptr
     }
