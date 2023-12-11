@@ -93,6 +93,7 @@ pub extern "C" fn kmain() {
 
     qor_core::tasks::execute_task(qor_core::tasks::Task::new(mount_default_fs()));
     qor_core::tasks::execute_task(qor_core::tasks::Task::new(map_fs()));
+    qor_core::tasks::execute_task(qor_core::tasks::Task::new(open_file()));
 }
 
 /// Mount the filesystem on the main block device
@@ -124,4 +125,21 @@ pub async fn map_fs() {
 
     let inode = fs_r.root_inode().await.unwrap();
     fs_r.walk_children(inode).await.unwrap();
+}
+
+/// Look at one of the ELF files
+///
+/// # Panics
+///
+/// This function will panic if any of the file system accesses fail
+pub async fn open_file() {
+    let fs = global_fs();
+    let fs_r = fs.read();
+
+    let inode = fs_r.lookup("/bin/hello").await.unwrap();
+    warn!("{:?}", inode);
+    let file = fs_r.read_to_data(inode).await.unwrap();
+
+    let elf = qor_core::structures::elf::Elf::parse(file.as_slice()).unwrap();
+    info!("ELF: {:?}", elf);
 }
