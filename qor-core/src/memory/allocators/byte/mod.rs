@@ -406,7 +406,9 @@ impl AllocationTable {
                     #[allow(clippy::comparison_chain)]
                     if guard.allocation_length() == align_slack + size {
                         guard.set_allocated(true);
-                        return Some((guard.pointer(self.pointer_upper_32) + align_slack) as *mut u8);
+                        return Some(
+                            (guard.pointer(self.pointer_upper_32) + align_slack) as *mut u8,
+                        );
                     } else if guard.allocation_length() > align_slack + size {
                         if let Some((free_index, upper_32, free)) = self.find_first_invalid(
                             guard.pointer(self.pointer_upper_32) + align_slack + size,
@@ -421,10 +423,10 @@ impl AllocationTable {
                             );
                             free.set_next(guard.next());
 
-                            guard.update(true, true, align_slack + size, guard.low_pointer().wrapping_add(align_slack.try_into().unwrap()));
+                            guard.update(true, true, align_slack + size, guard.low_pointer());
                             guard.set_next(free_index);
 
-                            return Some(guard.pointer(upper_32) as *mut u8);
+                            return Some((guard.pointer(upper_32) + align_slack) as *mut u8);
                         }
                     }
                 }
