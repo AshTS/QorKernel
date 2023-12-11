@@ -31,7 +31,10 @@ pub trait MountingFilesystem: FileSystem {
 #[async_trait::async_trait]
 pub trait PathLookup {
     async fn lookup(&self, path: &str) -> Result<INodeReference, FileSystemError>;
-    async fn reverse_lookup(&self, inode: INodeReference) -> Result<Option<alloc::string::String>, FileSystemError>;
+    async fn reverse_lookup(
+        &self,
+        inode: INodeReference,
+    ) -> Result<Option<alloc::string::String>, FileSystemError>;
     async fn invalidate_cache(&self, inode: INodeReference) -> Result<(), FileSystemError>;
     async fn walk_children(&self, inode: INodeReference) -> Result<usize, FileSystemError>;
 }

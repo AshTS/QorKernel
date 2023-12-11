@@ -1,4 +1,10 @@
-use alloc::{boxed::Box, collections::BTreeMap, sync::Arc, vec::Vec, string::{ToString, String}};
+use alloc::{
+    boxed::Box,
+    collections::BTreeMap,
+    string::{String, ToString},
+    sync::Arc,
+    vec::Vec,
+};
 use spin::RwLock;
 
 use super::{
@@ -213,23 +219,44 @@ impl VirtualFileSystem {
                 return Err(FileSystemError::PathNotFound);
             }
         }
-        
+
         self.insert_pairing(build_path.as_str(), inode);
         Ok(inode)
     }
 
     #[async_recursion::async_recursion]
-    async fn inner_walk_children(&self, inode: INodeReference, path: &str) -> Result<usize, FileSystemError> {
+    async fn inner_walk_children(
+        &self,
+        inode: INodeReference,
+        path: &str,
+    ) -> Result<usize, FileSystemError> {
+        self.insert_pairing(path, inode);
         let mut total = 1;
         let inode_data = self.inode_data(inode).await?;
         if inode_data.is_directory() {
             for dir_entry in self.directory_entries(inode).await? {
-                self.insert_pairing(path, inode);
                 if dir_entry.name == "." || dir_entry.name == ".." {
                     continue;
                 };
 
-                total += self.inner_walk_children(dir_entry.inode, &alloc::format!("{}{}{}", path, if path.ends_with('/') { "" } else { "/" }, dir_entry.name)).await?;
+                crate::trace!(
+                    "{}{}{}",
+                    path,
+                    if path.ends_with('/') { "" } else { "/" },
+                    dir_entry.name
+                );
+
+                total += self
+                    .inner_walk_children(
+                        dir_entry.inode,
+                        &alloc::format!(
+                            "{}{}{}",
+                            path,
+                            if path.ends_with('/') { "" } else { "/" },
+                            dir_entry.name
+                        ),
+                    )
+                    .await?;
             }
         }
 
@@ -244,8 +271,7 @@ impl PathLookup for VirtualFileSystem {
             let mut chars = path.chars();
             chars.next_back();
             chars.as_str()
-        }
-        else {
+        } else {
             path
         };
 
@@ -257,7 +283,10 @@ impl PathLookup for VirtualFileSystem {
         Ok(inode)
     }
 
-    async fn reverse_lookup(&self, inode: INodeReference) -> Result<Option<alloc::string::String>, FileSystemError> {
+    async fn reverse_lookup(
+        &self,
+        inode: INodeReference,
+    ) -> Result<Option<alloc::string::String>, FileSystemError> {
         Ok(self.rev_path_cache.read().get(&inode).cloned())
     }
 
@@ -278,8 +307,12 @@ impl PathLookup for VirtualFileSystem {
             self.rev_path_cache.write().remove(&inode);
         }
         let read = self.path_cache.read();
-        let remove = read.iter().filter(|(_, this_inode)| **this_inode == inode).map(|(path, _)| path).collect::<Vec<_>>();
-        
+        let remove = read
+            .iter()
+            .filter(|(_, this_inode)| **this_inode == inode)
+            .map(|(path, _)| path)
+            .collect::<Vec<_>>();
+
         for rem in remove {
             self.path_cache.write().remove(rem);
         }

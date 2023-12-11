@@ -8,5 +8,5 @@ pub enum FileSystemError {
     NoMountedFilesystem,
     CorruptedFilesystem,
     PathNotFound,
-    NotDirectory
+    NotDirectory,
 }

@@ -2,7 +2,6 @@ pub struct Parser<'a> {
     data: &'a [u8],
 }
 
-
 impl<'a> Parser<'a> {
     /// Construct a new parser for a slice of `u8`'s
     #[must_use]
@@ -107,6 +106,40 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Take a slice of `u8`'s.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the slice is of the wrong size.
+    pub fn take_u8_slice(&mut self, length: usize) -> Option<&'_ [u8]> {
+        if self.data.len() >= length {
+            let result = &self.data[0..length];
+            self.data = &self.data[length..];
+
+            Some(result)
+        } else {
+            None
+        }
+    }
+
+    /// Take an array of `u16`'s of a given length.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the slice is of the wrong size.
+    pub fn take_u16_array<const L: usize>(&mut self) -> Option<[u16; L]> {
+        if self.data.len() >= L {
+            let mut result = [0; L];
+            for slot in result.iter_mut() {
+                *slot = self.take_u16().unwrap();
+            }
+
+            Some(result)
+        } else {
+            None
+        }
+    }
+
     /// Take an array of `u32`'s of a given length.
     ///
     /// # Panics
@@ -117,6 +150,24 @@ impl<'a> Parser<'a> {
             let mut result = [0; L];
             for slot in result.iter_mut() {
                 *slot = self.take_u32().unwrap();
+            }
+
+            Some(result)
+        } else {
+            None
+        }
+    }
+
+    /// Take an array of `u64`'s of a given length.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the slice is of the wrong size.
+    pub fn take_u64_array<const L: usize>(&mut self) -> Option<[u64; L]> {
+        if self.data.len() >= L {
+            let mut result = [0; L];
+            for slot in result.iter_mut() {
+                *slot = self.take_u64().unwrap();
             }
 
             Some(result)

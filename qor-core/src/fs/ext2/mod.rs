@@ -275,9 +275,6 @@ impl<E: 'static + core::fmt::Debug + Send + Sync> Ext2FileSystem<E> {
         let sb = self.read_super_block().await?;
         let block_size = sb.block_size();
 
-        let block_index = inode.block_pointers[0];
-        self.read_block(block_index, buffer).await?;
-
         assert!(
             buffer.len() <= inode.size(sb.use_64_bit_sizes()),
             "Buffer is bigger than file size"
@@ -293,8 +290,10 @@ impl<E: 'static + core::fmt::Debug + Send + Sync> Ext2FileSystem<E> {
                 self.read_block(*direct_pointer, this_buffer.as_mut_slice())
                     .await?;
                 remaining_buffer.copy_from_slice(&this_buffer[0..remaining_buffer.len()]);
+                let l = remaining_buffer.len();
+                remaining_buffer = &mut remaining_buffer[l..];
             } else {
-                self.read_block(block_index, remaining_buffer).await?;
+                self.read_block(*direct_pointer, remaining_buffer).await?;
                 remaining_buffer = &mut remaining_buffer[block_size..];
             }
 
@@ -312,6 +311,8 @@ impl<E: 'static + core::fmt::Debug + Send + Sync> Ext2FileSystem<E> {
                 self.read_block(block_index, this_buffer.as_mut_slice())
                     .await?;
                 remaining_buffer.copy_from_slice(&this_buffer[0..remaining_buffer.len()]);
+                let l = remaining_buffer.len();
+                remaining_buffer = &mut remaining_buffer[l..];
             } else {
                 self.read_block(block_index, remaining_buffer).await?;
                 remaining_buffer = &mut remaining_buffer[block_size..];
@@ -335,6 +336,8 @@ impl<E: 'static + core::fmt::Debug + Send + Sync> Ext2FileSystem<E> {
                     self.read_block(block_index_b, this_buffer.as_mut_slice())
                         .await?;
                     remaining_buffer.copy_from_slice(&this_buffer[0..remaining_buffer.len()]);
+                    let l = remaining_buffer.len();
+                    remaining_buffer = &mut remaining_buffer[l..];
                 } else {
                     self.read_block(block_index_b, remaining_buffer).await?;
                     remaining_buffer = &mut remaining_buffer[block_size..];
