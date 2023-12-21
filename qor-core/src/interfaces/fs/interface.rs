@@ -1,6 +1,6 @@
 use super::{DirectoryEntry, FileDescriptor, FileSystemError, INodeData, INodeReference};
 
-use alloc::{boxed::Box, vec::Vec};
+use alloc::{boxed::Box, vec::Vec, sync::Arc};
 
 #[async_trait::async_trait]
 pub trait FileSystem {
@@ -11,7 +11,7 @@ pub trait FileSystem {
         inode: INodeReference,
     ) -> Result<Vec<DirectoryEntry<'_>>, FileSystemError>;
     async fn open(&self, inode: INodeReference)
-        -> Result<Box<dyn FileDescriptor>, FileSystemError>;
+        -> Result<Arc<dyn FileDescriptor>, FileSystemError>;
     async fn read_to_data(&self, inode: INodeReference) -> Result<Vec<u8>, FileSystemError>;
 }
 

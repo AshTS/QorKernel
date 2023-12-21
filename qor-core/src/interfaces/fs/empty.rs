@@ -4,6 +4,7 @@ use super::{
 };
 
 use alloc::boxed::Box;
+use alloc::sync::Arc;
 use alloc::vec::Vec;
 
 #[derive(Debug)]
@@ -95,10 +96,10 @@ impl FileSystem for EmptyFileSystem {
     async fn open(
         &self,
         inode: INodeReference,
-    ) -> Result<Box<dyn FileDescriptor>, FileSystemError> {
+    ) -> Result<Arc<dyn FileDescriptor>, FileSystemError> {
         self.verify_ref(inode)?;
         match inode.inode {
-            0 => Ok(Box::new(EmptyFileDescriptor {})),
+            0 => Ok(Arc::new(EmptyFileDescriptor {})),
             _ => Err(FileSystemError::BadInode(inode)),
         }
     }

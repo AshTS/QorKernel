@@ -120,7 +120,7 @@ impl FileSystem for VirtualFileSystem {
     async fn open(
         &self,
         inode: INodeReference,
-    ) -> Result<Box<dyn FileDescriptor>, FileSystemError> {
+    ) -> Result<Arc<dyn FileDescriptor>, FileSystemError> {
         if let Some(mounted_fs) = self.mounted_filesystems.get(&inode) {
             let mounted_root = self
                 .devices

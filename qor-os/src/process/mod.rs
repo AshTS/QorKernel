@@ -2,7 +2,8 @@
 
 use core::{sync::atomic::AtomicU16, ops::DerefMut};
 
-use qor_core::{structures::{id::{ProcessID, PID}, elf::Elf, mem::{PermissionFlags, PermissionFlag}, syscall_error::SyscallError}, memory::ByteCount};
+use alloc::sync::Arc;
+use qor_core::{structures::{id::{ProcessID, PID}, elf::Elf, mem::{PermissionFlags, PermissionFlag}, syscall_error::SyscallError}, memory::ByteCount, interfaces::fs::FileDescriptor};
 use qor_riscv::{
     memory::{mmu::{entry::GlobalUserFlags, addresses::VirtualAddress}, Page, PageCount, PAGE_SIZE},
     trap::frame::TrapFrame,
@@ -13,10 +14,11 @@ use crate::{
     trap::allocate_trap_frame, syscalls::structures::UserspaceAddress,
 };
 
-use self::memory::{MemoryStatistics, ProcessBox, MappedPageSequence};
+use self::{memory::{MemoryStatistics, ProcessBox, MappedPageSequence}, proc_interface::ProcessData};
 
 pub mod boxed;
 pub mod memory;
+pub mod proc_interface;
 
 static PID_COUNTER: AtomicU16 = AtomicU16::new(1);
 
@@ -55,7 +57,8 @@ pub struct Process {
     state: ProcessState,
     page_table: ProcessBox<'static, Page, ManagedPageTable>,
     memory_stats: alloc::sync::Arc<MemoryStatistics>,
-    mapped_pages: alloc::vec::Vec<MappedPageSequence>
+    mapped_pages: alloc::vec::Vec<MappedPageSequence>,
+    interface_data: ProcessData
 }
 
 impl ExecutionState {
@@ -93,7 +96,8 @@ impl Process {
             state: ProcessState::Active,
             page_table,
             memory_stats,
-            mapped_pages: alloc::vec::Vec::new()
+            mapped_pages: alloc::vec::Vec::new(),
+            interface_data: ProcessData::new()
         }
     }
 
@@ -171,8 +175,11 @@ impl Process {
     }
 
     pub fn kernel_pointer(&self, address: UserspaceAddress) -> Result<usize, SyscallError> {
-        debug!("{:x?}", address);
         self.page_table.virtual_to_physical_address(VirtualAddress(address.0.try_into().unwrap())).map(|v| v.0.try_into().unwrap()).ok_or(SyscallError::Fault)
+    }
+
+    pub fn file_descriptor(&self, descriptor: usize) -> Result<&Arc<dyn FileDescriptor>, SyscallError> {
+        self.interface_data.file_descriptors.get(&descriptor).ok_or(SyscallError::BadFileDescriptor)
     }
 
     pub fn registers(&self) -> &[u64; 32] {

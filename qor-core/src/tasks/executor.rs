@@ -8,11 +8,11 @@ use core::task::Waker;
 
 /// Kernel executor
 #[allow(clippy::module_name_repetitions)]
-pub struct SimpleExecutor {
-    task_queue: VecDeque<Task>,
+pub struct SimpleExecutor<'a> {
+    task_queue: VecDeque<Task<'a>>,
 }
 
-impl SimpleExecutor {
+impl<'a> SimpleExecutor<'a> {
     /// Construct a new empty executor
     #[must_use]
     pub const fn new() -> Self {
@@ -22,7 +22,7 @@ impl SimpleExecutor {
     }
 
     /// Add a new task to the spawn
-    pub fn spawn(&mut self, task: Task) {
+    pub fn spawn(&mut self, task: Task<'a>) {
         self.task_queue.push_back(task);
     }
 
@@ -74,7 +74,7 @@ impl SimpleExecutor {
     }
 }
 
-impl Default for SimpleExecutor {
+impl<'a> Default for SimpleExecutor<'a> {
     fn default() -> Self {
         Self::new()
     }

@@ -5,15 +5,26 @@ use core::task::Context;
 use core::task::Poll;
 
 /// Kernel task object used to enable async execution on the kernel
-pub struct Task {
-    future: Pin<Box<dyn Future<Output = ()>>>,
+pub struct Task<'a> {
+    future: Pin<Box<dyn Future<Output = ()> + 'a>>,
 }
 
-impl Task {
+async fn ignore<'a, T>(future: impl Future<Output = T> + 'a + Send) {
+    future.await;
+}
+
+impl<'a> Task<'a> {
     /// Construct a task around a future
-    pub fn new(future: impl Future<Output = ()> + 'static) -> Self {
+    pub fn new(future: impl Future<Output = ()> + 'a) -> Self {
         Self {
             future: Box::pin(future),
+        }
+    }
+
+    /// Construct a task around a future
+    pub fn ignore_result<T: 'a>(future: impl Future<Output = T> + 'a + Send) -> Self {
+        Self {
+            future: Box::pin(ignore(future)),
         }
     }
 

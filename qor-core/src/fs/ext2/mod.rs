@@ -406,7 +406,7 @@ impl<E: 'static + core::fmt::Debug + Send + Sync> Ext2FileSystem<E> {
     }
 }
 
-use alloc::{boxed::Box, string::ToString};
+use alloc::{boxed::Box, string::ToString, sync::Arc};
 
 #[async_trait::async_trait]
 impl<E: core::fmt::Debug + Send + Sync> FileSystem for Ext2FileSystem<E> {
@@ -478,7 +478,7 @@ impl<E: core::fmt::Debug + Send + Sync> FileSystem for Ext2FileSystem<E> {
     async fn open(
         &self,
         _inode: INodeReference,
-    ) -> Result<Box<dyn FileDescriptor>, FileSystemError> {
+    ) -> Result<Arc<dyn FileDescriptor>, FileSystemError> {
         todo!()
     }
 
