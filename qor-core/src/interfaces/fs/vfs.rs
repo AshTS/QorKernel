@@ -239,12 +239,12 @@ impl VirtualFileSystem {
                     continue;
                 };
 
-                crate::trace!(
+                /* crate::trace!(
                     "{}{}{}",
                     path,
                     if path.ends_with('/') { "" } else { "/" },
                     dir_entry.name
-                );
+                ); */
 
                 total += self
                     .inner_walk_children(

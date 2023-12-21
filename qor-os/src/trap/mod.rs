@@ -37,7 +37,7 @@ pub fn initialize_trap_frame() {
         satp: 0,
         trap_stack: unsafe { stack.as_mut_ptr().add(2) },
         trap_stack_size: 2,
-        hart_id: qor_core::structures::id::HartID(0),
+        hart_id: qor_core::structures::id::HartID(0)
     };
 
     let frame = crate::memory::bump::PAGE_BUMP_ALLOCATOR

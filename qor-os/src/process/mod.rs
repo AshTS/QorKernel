@@ -2,8 +2,7 @@
 
 use core::{sync::atomic::AtomicU16, ops::DerefMut};
 
-use alloc::collections::BTreeMap;
-use qor_core::{structures::{id::{ProcessID, PID}, elf::Elf, mem::{PermissionFlags, PermissionFlag}}, memory::ByteCount};
+use qor_core::{structures::{id::{ProcessID, PID}, elf::Elf, mem::{PermissionFlags, PermissionFlag}, syscall_error::SyscallError}, memory::ByteCount};
 use qor_riscv::{
     memory::{mmu::{entry::GlobalUserFlags, addresses::VirtualAddress}, Page, PageCount, PAGE_SIZE},
     trap::frame::TrapFrame,
@@ -11,10 +10,10 @@ use qor_riscv::{
 
 use crate::{
     memory::mmu::ManagedPageTable,
-    trap::allocate_trap_frame,
+    trap::allocate_trap_frame, syscalls::structures::UserspaceAddress,
 };
 
-use self::memory::{MemoryStatistics, ProcessBox, ProcessPageSequence, MappedPageSequence};
+use self::memory::{MemoryStatistics, ProcessBox, MappedPageSequence};
 
 pub mod boxed;
 pub mod memory;
@@ -132,8 +131,6 @@ impl Process {
 
                 let sequence = proc.map_page_sequence(virtual_address, length, permissions);
                 sequence.deref_mut()[page_offset..page_offset + file_length].copy_from_slice(&elf.data[file_offset.. file_offset + file_length]);
-            
-                debug!("{:x?}", &sequence.deref_mut()[page_offset..page_offset + file_length]);
             } 
         }
         
@@ -147,6 +144,20 @@ impl Process {
         self.mapped_pages.last_mut().unwrap()
     }
 
+    pub fn get_switching_data(&self) -> (usize, usize, usize) {
+        (self.page_table.construct_satp(self.pid), core::ptr::addr_of!(*self.main_execution.trap_frame) as usize, self.main_execution.program_counter)
+    }
+
+    pub fn switch(data: (usize, usize, usize)) -> ! {
+        unsafe {
+            switch_to_user(
+                data.1,
+                data.2,
+                data.0,
+            )
+        }
+    }
+
     pub fn switch_to(&self) -> ! {
         let satp = self.page_table.construct_satp(self.pid);
 
@@ -157,6 +168,19 @@ impl Process {
                 satp,
             )
         }
+    }
+
+    pub fn kernel_pointer(&self, address: UserspaceAddress) -> Result<usize, SyscallError> {
+        debug!("{:x?}", address);
+        self.page_table.virtual_to_physical_address(VirtualAddress(address.0.try_into().unwrap())).map(|v| v.0.try_into().unwrap()).ok_or(SyscallError::Fault)
+    }
+
+    pub fn registers(&self) -> &[u64; 32] {
+        &self.main_execution.trap_frame.registers
+    }
+
+    pub fn registers_mut(&mut self) -> &mut [u64; 32] {
+        &mut self.main_execution.trap_frame.registers
     }
 }
 

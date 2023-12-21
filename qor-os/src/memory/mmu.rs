@@ -162,8 +162,6 @@ impl ManagedPageTable {
 
 /// Identity map the kernel to a `ManagedPageTable` stored on the heap
 pub fn identity_map_kernel(table: &mut ManagedPageTable, gu_flags: GlobalUserFlags) {
-    info!("Identity mapping kernel space");
-
     table.id_map_range(
         unsafe { crate::asm::HEAP_START }.into(),
         unsafe { crate::asm::HEAP_END }.into(),
@@ -237,6 +235,4 @@ pub fn identity_map_kernel(table: &mut ManagedPageTable, gu_flags: GlobalUserFla
         gu_flags,
         EntryPermissionFlags::ReadWrite,
     );
-
-    info!("Completed identity mapping kernel space");
 }

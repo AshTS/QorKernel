@@ -1,3 +1,5 @@
+use crate::process::{processes, Process};
+
 use super::{
     external::handle_external_interrupt,
     structures::{AsynchronousTrap, SynchronousTrap, TrapCause, TrapInfo},
@@ -11,8 +13,12 @@ pub fn handle_trap(info: &TrapInfo) -> usize {
             debug!("Machine timer interrupt");
             crate::drivers::CLINT_DRIVER.handle_interrupt(info.hart.into());
 
-            if let Some(entry) = crate::process::processes().spin_lock().first_entry() {
-                entry.get().switch_to();
+            let mut lock = crate::process::processes().spin_lock();
+            if let Some(entry) = lock.first_entry() {
+                let switching_data = entry.get().get_switching_data();
+                drop(lock);
+
+                Process::switch(switching_data);
             }
 
         }
@@ -21,6 +27,21 @@ pub fn handle_trap(info: &TrapInfo) -> usize {
         }
         TrapCause::Synchronous(SynchronousTrap::Breakpoint) => {
             debug!("Breakpoint at 0x{:x}", info.trap_pc);
+        }
+        TrapCause::Synchronous(SynchronousTrap::EnvironmentCallFromUMode) => {
+            warn!("Syscall!");
+            warn!("PID: {:?}", qor_riscv::trap::get_pid());
+
+            let pid = qor_riscv::trap::get_pid();
+            let mut lock = processes().spin_lock();
+
+            #[allow(clippy::option_if_let_else)]
+            if let Some(proc) = lock.get_mut(&pid) {
+                crate::syscalls::handler::raw_handle_syscall(proc);
+            }
+            else {
+                error!("Got syscall from non-existant process {:?}", pid);
+            }
         }
         _ => {
             panic!("Unhandled trap: {:x?}", info);

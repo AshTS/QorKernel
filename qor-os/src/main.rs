@@ -20,6 +20,7 @@ mod kprint;
 mod memory;
 mod panic;
 mod process;
+mod syscalls;
 mod trap;
 
 /// Entry point for the boot sequence, no interrupts are enabled when this function is called, and we are in machine
@@ -48,10 +49,13 @@ pub extern "C" fn kinit() {
     let page_table = memory::PAGE_BUMP_ALLOCATOR
         .allocate_object(memory::mmu::ManagedPageTable::empty())
         .expect("Unable to allocate space for root kernel page table");
+
+    info!("Identity mapping kernel space");
     memory::mmu::identity_map_kernel(
         page_table,
         qor_riscv::memory::mmu::entry::GlobalUserFlags::None,
     );
+    info!("Completed identity mapping kernel space");
 
     // Set the identity mapped page table as that used for the kernel in kmain
     page_table.set_as_page_table();

@@ -13,11 +13,12 @@ pub enum SyscallNumber {
 }
 
 /// Address in userspace memory
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct UserspaceAddress(pub usize);
 
 impl SyscallNumber {
     /// Take the address width syscall number, and convert it to a [`SyscallNumber`].
-    pub fn from_number(number: usize) -> Option<Self> {
+    pub const fn from_number(number: u64) -> Option<Self> {
         match number {
             0 => Some(Self::Read),
             1 => Some(Self::Write),
