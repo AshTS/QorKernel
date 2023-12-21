@@ -38,6 +38,12 @@ impl<'a, Page: 'static, T> PageBox<'a, Page, T> {
     pub const fn as_ptr(&self) -> *mut T {
         self.ptr.as_ptr()
     }
+
+    /// Get the number of pages involved in the allocation
+    #[must_use]
+    pub const fn page_count(&self) -> usize {
+        self.page_count
+    }
 }
 
 impl<'a, Page: 'static, T> core::ops::Deref for PageBox<'a, Page, T> {

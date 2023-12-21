@@ -1,6 +1,6 @@
 use super::{
-    enums::{Architecture, BitWidth, Endian, ObjectFileType, OsABI},
-    raw::RawElfHeader,
+    enums::{Architecture, BitWidth, Endian, ObjectFileType, OsABI, ProgramHeaderType, SectionHeaderType},
+    raw::{RawElfHeader, RawProgramHeader, RawSectionHeader}, flags::{ProgramHeaderFlags, SectionHeaderFlags},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -52,6 +52,68 @@ impl core::convert::TryFrom<RawElfHeader> for ElfHeader {
             sh_entry_size: value.sh_entry_size,
             sh_entry_count: value.sh_entry_count,
             sh_str_index: value.sh_str_index,
+        })
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ProgramHeader {
+    pub header_type: ProgramHeaderType,
+    pub flags: ProgramHeaderFlags,
+    pub offset: u64,
+    pub virtual_addr: u64,
+    pub physical_addr: u64,
+    pub file_size: u64,
+    pub memory_size: u64,
+    pub align: u64,
+}
+
+impl core::convert::TryFrom<RawProgramHeader> for ProgramHeader {
+    type Error = ();
+
+    fn try_from(value: RawProgramHeader) -> Result<Self, ()> {
+        Ok(Self {
+            header_type: ProgramHeaderType::try_from(value.p_type).map_err(|_| ())?,
+            flags: ProgramHeaderFlags::new(value.p_flags),
+            offset: value.p_offset,
+            virtual_addr: value.p_vaddr,
+            physical_addr: value.p_paddr,
+            file_size: value.p_filesz,
+            memory_size: value.p_memsz,
+            align: value.p_align,
+        })
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SectionHeader {
+    name: u32,
+    section_type: SectionHeaderType,
+    flags: SectionHeaderFlags,
+    virtual_addr: u64,
+    offset: u64,
+    size: u64,
+    link: u32,
+    info: u32,
+    align: u64,
+    entry_size: u64,
+}
+
+impl core::convert::TryFrom<RawSectionHeader> for SectionHeader {
+    type Error = ();
+
+    fn try_from(value: RawSectionHeader) -> Result<Self, ()> {
+        Ok(Self {
+            name: value.sh_name,
+            section_type: SectionHeaderType::try_from(value.sh_type).map_err(|_| ())?,
+            flags: SectionHeaderFlags::new(value.sh_flags),
+            virtual_addr: value.sh_addr,
+            offset: value.sh_offset,
+            size: value.sh_size,
+            link: value.sh_link,
+            info: value.sh_info,
+            align: value.sh_addralign,
+            entry_size: value.sh_entsize,
         })
     }
 }

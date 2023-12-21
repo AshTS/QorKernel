@@ -83,7 +83,6 @@ pub extern "C" fn kmain() {
 
     // Initialize the CLINT timer
     crate::drivers::CLINT_DRIVER.set_frequency(qor_core::structures::time::Hertz(2));
-    // crate::drivers::CLINT_DRIVER.start_timer(hart_id);
     info!("CLINT Initialized");
 
     // Probe the virt io address range
@@ -94,6 +93,9 @@ pub extern "C" fn kmain() {
     qor_core::tasks::execute_task(qor_core::tasks::Task::new(mount_default_fs()));
     qor_core::tasks::execute_task(qor_core::tasks::Task::new(map_fs()));
     qor_core::tasks::execute_task(qor_core::tasks::Task::new(open_file()));
+
+    // Starting CLINT Timer
+    crate::drivers::CLINT_DRIVER.start_timer(hart_id);
 }
 
 /// Mount the filesystem on the main block device
@@ -141,5 +143,7 @@ pub async fn open_file() {
     let file = fs_r.read_to_data(inode).await.unwrap();
 
     let elf = qor_core::structures::elf::Elf::parse(file.as_slice()).unwrap();
-    info!("ELF: {:?}", elf);
+    
+    let proc = process::Process::from_elf_file(elf, qor_core::memory::KiByteCount::new(4).convert());
+    process::start_process(proc);
 }

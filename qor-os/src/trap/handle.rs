@@ -10,6 +10,11 @@ pub fn handle_trap(info: &TrapInfo) -> usize {
         TrapCause::AsynchronousTrap(AsynchronousTrap::MachineTimer) => {
             debug!("Machine timer interrupt");
             crate::drivers::CLINT_DRIVER.handle_interrupt(info.hart.into());
+
+            if let Some(entry) = crate::process::processes().spin_lock().first_entry() {
+                entry.get().switch_to();
+            }
+
         }
         TrapCause::AsynchronousTrap(AsynchronousTrap::MachineExternal) => {
             handle_external_interrupt(info);

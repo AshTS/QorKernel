@@ -1,3 +1,5 @@
+use qor_core::structures::mem::{PermissionFlags, PermissionFlag};
+
 use super::addresses::PhysicalAddress;
 
 const PPN2_MASK: u64 = (1 << 26) - 1;
@@ -283,6 +285,34 @@ impl core::fmt::Display for EntryPermissionFlags {
             Self::ExecuteOnly => write!(f, "--x"),
             Self::ReadExecute => write!(f, "r-x"),
             Self::ReadWriteExecute => write!(f, "rwx"),
+        }
+    }
+}
+
+impl core::convert::TryFrom<PermissionFlags> for EntryPermissionFlags {
+    type Error = ();
+
+    fn try_from(value: PermissionFlags) -> Result<Self, Self::Error> {
+        if value & PermissionFlag::Read && value & PermissionFlag::Write && value & PermissionFlag::Execute {
+            Ok(Self::ReadWriteExecute)
+        }
+        else if value & PermissionFlag::Read && value & PermissionFlag::Write {
+            Ok(Self::ReadWrite)
+        }
+        else if value & PermissionFlag::Read && value & PermissionFlag::Execute {
+            Ok(Self::ReadExecute)
+        }
+        else if value & PermissionFlag::Read {
+            Ok(Self::ReadOnly)
+        }
+        else if value & PermissionFlag::Execute {
+            Ok(Self::ExecuteOnly)
+        }
+        else if !(value & PermissionFlag::Read || value & PermissionFlag::Execute || value & PermissionFlag::Write) {
+            Ok(Self::None)
+        }
+        else {
+            Err(())
         }
     }
 }

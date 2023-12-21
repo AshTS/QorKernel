@@ -1,22 +1,28 @@
 #![allow(dead_code)]
 
-use core::sync::atomic::AtomicU16;
+use core::{sync::atomic::AtomicU16, ops::DerefMut};
 
-use qor_core::{
-    memory::allocators::page::bitmap::PageBox,
-    structures::id::{ProcessID, PID},
-};
+use alloc::collections::BTreeMap;
+use qor_core::{structures::{id::{ProcessID, PID}, elf::Elf, mem::{PermissionFlags, PermissionFlag}}, memory::ByteCount};
 use qor_riscv::{
-    memory::{mmu::entry::GlobalUserFlags, Page, PageCount},
+    memory::{mmu::{entry::GlobalUserFlags, addresses::VirtualAddress}, Page, PageCount, PAGE_SIZE},
     trap::frame::TrapFrame,
 };
 
 use crate::{
-    memory::{get_page_bitmap_allocator, mmu::ManagedPageTable, PageSequence},
+    memory::mmu::ManagedPageTable,
     trap::allocate_trap_frame,
 };
 
+use self::memory::{MemoryStatistics, ProcessBox, ProcessPageSequence, MappedPageSequence};
+
+pub mod boxed;
+pub mod memory;
+
 static PID_COUNTER: AtomicU16 = AtomicU16::new(1);
+
+type ProgramTableMutex = qor_core::sync::Mutex<alloc::collections::BTreeMap<PID, Process>>;
+static PROGRAM_TABLE: ProgramTableMutex = qor_core::sync::Mutex::new(alloc::collections::BTreeMap::new());
 
 /// Get the next PID to be used
 fn new_pid() -> PID {
@@ -28,8 +34,8 @@ fn new_pid() -> PID {
 /// of pages used for the stack.
 pub struct ExecutionState {
     program_counter: usize,
-    stack: PageSequence,
-    trap_frame: PageBox<'static, Page, TrapFrame>,
+    stack: MappedPageSequence,
+    trap_frame: ProcessBox<'static, Page, TrapFrame>,
 }
 
 #[allow(clippy::module_name_repetitions)]
@@ -48,17 +54,26 @@ pub struct Process {
     pid: PID,
     main_execution: ExecutionState,
     state: ProcessState,
-    page_table: PageBox<'static, Page, ManagedPageTable>,
+    page_table: ProcessBox<'static, Page, ManagedPageTable>,
+    memory_stats: alloc::sync::Arc<MemoryStatistics>,
+    mapped_pages: alloc::vec::Vec<MappedPageSequence>
 }
 
 impl ExecutionState {
-    pub fn from_components(initial_program_counter: usize, stack_size: PageCount) -> Self {
+    pub fn from_components(memory_stats: &alloc::sync::Arc<MemoryStatistics>, page_table: &mut ManagedPageTable, initial_program_counter: usize, stack_size: PageCount) -> Self {
+        let mut trap_frame = memory_stats
+            .alloc_page_box(allocate_trap_frame())
+            .expect("Unable to allocate trap frame space");
+        
+        let stack_addr = 0x1_0000_0000;
+
+        let stack = memory_stats.map_page_sequence(page_table, stack_size, VirtualAddress(stack_addr), PermissionFlags::new(0) | PermissionFlag::Read | PermissionFlag::Write);
+        trap_frame.registers[2] = stack_addr + stack_size.raw_bytes() as u64;
+
         Self {
             program_counter: initial_program_counter,
-            stack: PageSequence::alloc(stack_size.raw()),
-            trap_frame: get_page_bitmap_allocator()
-                .alloc_boxed(allocate_trap_frame())
-                .expect("Unable to allocate trap frame space"),
+            stack,
+            trap_frame
         }
     }
 }
@@ -70,26 +85,66 @@ extern "C" {
 impl Process {
     pub fn from_components(
         execution_state: ExecutionState,
-        page_table: PageBox<'static, Page, ManagedPageTable>,
+        page_table: ProcessBox<'static, Page, ManagedPageTable>,
+        memory_stats: alloc::sync::Arc<MemoryStatistics>,
     ) -> Self {
         Self {
             pid: new_pid(),
             main_execution: execution_state,
             state: ProcessState::Active,
             page_table,
+            memory_stats,
+            mapped_pages: alloc::vec::Vec::new()
         }
     }
 
     pub fn from_fn_ptr(function: usize, stack_size: PageCount) -> Self {
-        let mut page_table = crate::memory::get_page_bitmap_allocator()
-            .alloc_boxed(crate::memory::mmu::ManagedPageTable::empty())
+        let mem_stats = alloc::sync::Arc::new(MemoryStatistics::new());
+
+        let mut page_table = mem_stats.alloc_page_box(crate::memory::mmu::ManagedPageTable::empty())
             .expect("Unable to allocate space for process page table");
         crate::memory::mmu::identity_map_kernel(&mut page_table, GlobalUserFlags::User);
 
         Self::from_components(
-            ExecutionState::from_components(function, stack_size),
+            ExecutionState::from_components(&mem_stats, &mut page_table, function, stack_size),
             page_table,
+            mem_stats
         )
+    }
+
+    pub fn from_elf_file(elf: Elf<'_>, stack_size: PageCount) -> Self {
+        let mem_stats = alloc::sync::Arc::new(MemoryStatistics::new());
+
+        let mut page_table = mem_stats.alloc_page_box(crate::memory::mmu::ManagedPageTable::empty())
+            .expect("Unable to allocate space for process page table");
+        crate::memory::mmu::identity_map_kernel(&mut page_table, GlobalUserFlags::User);
+
+        let mut proc = Self::from_components(ExecutionState::from_components(&mem_stats, &mut page_table, elf.header.entry.try_into().unwrap(), stack_size), page_table, mem_stats);
+    
+        for program_header in elf.program_headers {
+            if program_header.header_type == qor_core::structures::elf::enums::ProgramHeaderType::Load {
+                let permissions: PermissionFlags = program_header.flags.into();
+                let virtual_address = VirtualAddress(program_header.virtual_addr & !(PAGE_SIZE as u64 - 1));
+                let page_offset: usize = (program_header.virtual_addr & (PAGE_SIZE as u64 - 1)).try_into().unwrap();
+                let file_length: usize = program_header.file_size.try_into().unwrap();
+                let length = ByteCount::new(program_header.memory_size.try_into().unwrap()).convert();
+                let file_offset = program_header.offset.try_into().unwrap();
+
+                let sequence = proc.map_page_sequence(virtual_address, length, permissions);
+                sequence.deref_mut()[page_offset..page_offset + file_length].copy_from_slice(&elf.data[file_offset.. file_offset + file_length]);
+            
+                debug!("{:x?}", &sequence.deref_mut()[page_offset..page_offset + file_length]);
+            } 
+        }
+        
+        proc
+    }
+
+    pub fn map_page_sequence(&mut self, virtual_address: VirtualAddress, length: PageCount, permissions: PermissionFlags) -> &mut MappedPageSequence {
+        let sequence = self.memory_stats.map_page_sequence(&mut self.page_table, length, virtual_address, permissions);
+        self.mapped_pages.push(sequence);
+
+        self.mapped_pages.last_mut().unwrap()
     }
 
     pub fn switch_to(&self) -> ! {
@@ -103,4 +158,13 @@ impl Process {
             )
         }
     }
+}
+
+#[allow(clippy::module_name_repetitions)]
+pub fn start_process(proc: Process) {
+    PROGRAM_TABLE.spin_lock().insert(proc.pid, proc);
+}
+
+pub fn processes() -> &'static ProgramTableMutex {
+    &PROGRAM_TABLE
 }

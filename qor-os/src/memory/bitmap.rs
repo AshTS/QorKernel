@@ -71,6 +71,12 @@ impl PageSequence {
             page_count: length,
         }
     }
+
+    /// Get the number of pages in the allocation
+    #[must_use]
+    pub const fn page_count(&self) -> usize {
+        self.page_count
+    }
 }
 
 impl core::ops::Drop for PageSequence {

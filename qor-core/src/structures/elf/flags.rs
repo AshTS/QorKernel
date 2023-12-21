@@ -1,3 +1,5 @@
+use crate::structures::mem::{PermissionFlags, PermissionFlag};
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ProgramHeaderFlag {
     Execute,
@@ -69,6 +71,24 @@ impl core::ops::BitAnd<ProgramHeaderFlag> for ProgramHeaderFlags {
 
     fn bitand(self, rhs: ProgramHeaderFlag) -> Self::Output {
         self.flag(rhs)
+    }
+}
+
+impl core::convert::From<ProgramHeaderFlags> for PermissionFlags {
+    fn from(value: ProgramHeaderFlags) -> Self {
+        let mut flags = Self::new(0);
+
+        if value.flag(ProgramHeaderFlag::Read) {
+            flags = flags | PermissionFlag::Read;
+        }
+        if value.flag(ProgramHeaderFlag::Write) {
+            flags = flags | PermissionFlag::Write;
+        }
+        if value.flag(ProgramHeaderFlag::Execute) {
+            flags = flags | PermissionFlag::Execute;
+        }
+
+        flags
     }
 }
 
